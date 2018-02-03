@@ -1,0 +1,86 @@
+/* ftx.css: stylesheet to display Fountain XML in a borwser or
+   transform into PDF */
+
+* {
+    font-family: courier, monospace;
+    font-size: 12pt;
+    display: block;
+}
+
+front-matter, note {
+    display: none;
+}
+
+center, b, u, i {
+    /* inline formatting elements */
+    display: inline;
+}
+
+@page {
+    size: Letter;
+    margin-top: 1in;
+    margin-left: 1.5in;
+}
+
+@media screen {
+    fountain {
+        margin-top: 1em;
+        margin-left: 1em;
+    }
+}
+
+fountain {
+    width: 6in;
+}
+
+sceneheading, action, dialogue, transition {
+    margin-bottom: 1em;
+}
+
+sceneheading {
+    page-break-after: avoid;
+}
+
+character {
+    margin-left: 2in;
+    page-break-after: avoid;
+}
+character[extension]::after {
+    content: " (" attr(extension) ")";
+}
+
+talk {
+    margin-left: 1in;
+    width: 3.5in;
+}
+
+paren {
+    margin-left: 1.5in;
+    /*width: 2.5in;*/
+    page-break-before: avoid;
+    page-break-after: avoid;
+}
+
+transition {
+    /*margin-left: 4in;*/
+    text-align: right;
+}
+
+transition:first-of-type {
+    /* first FADE IN: goes on the left */
+    /*margin-left: auto;*/
+    text-align: inherit;
+}
+
+b {
+    font-weight: bold;
+}
+
+u {
+    text-decoration: underline;
+}
+
+i {
+    font-style: italic;
+}
+

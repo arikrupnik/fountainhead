@@ -1,0 +1,36 @@
+<!-- My XML representation of the Fountain format  -->
+
+<!-- FTX follows, as closely as it can, the structure implicit in a
+     Fountain document, but with the structure and semantics explicit
+     in the document. It furthers adheres to the rule that character
+     content represents visible text, such that if all tags
+     disappeared and only element text remained, the screenplay would
+     still read correctly, delta formatting. As such, sections
+     headers, invible in print per Fountain specification, are
+     attributes on relevant elements, but extensions ("V.O.", "O.S.")
+     are element text. -->
+
+<!ENTITY % formatting "#PCDATA|b|u|i">
+
+<!ELEMENT fountain (front-matter?, (scene|transition)+)>
+
+<!-- this needs further development -->
+<!ELEMENT front-matter ANY>
+<!ELEMENT center (%formatting;)*>
+<!ELEMENT b (%formatting;)*>
+<!ELEMENT u (%formatting;)*>
+<!ELEMENT i (%formatting;)*>
+
+<!ELEMENT scene (sceneheading, (action|dialogue|note)+)>
+<!ATTLIST scene id ID #IMPLIED>
+<!ELEMENT sceneheading (#PCDATA)>
+<!ELEMENT action (%formatting;)*>
+<!ELEMENT dialogue (character, (talk|paren)+)>
+<!ELEMENT character (#PCDATA)>
+<!ATTLIST character extension (V.O.|O.S.) #IMPLIED>
+<!ELEMENT talk (%formatting;)*>
+<!ELEMENT paren (%formatting;)*>
+
+<!ELEMENT note (#PCDATA)>
+
+<!ELEMENT transition (#PCDATA)>
