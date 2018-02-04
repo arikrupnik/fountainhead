@@ -52,13 +52,23 @@
   <xsl:template match="/*">
     <xsl:variable name="first-delimiter" select="(sceneheading|transition)[1]"/>
     <xsl:processing-instruction name="xml-stylesheet">
+      <!-- This PI is for the benefit of browsers that can apply CSS
+           directly to XML. weasyprint(1) assumes the input to be
+           weird HTML and correctly ignores PIs. It needs -s argument
+           in makefile to apply the stylesheet. -->
       <xsl:text>type="text/css" href="fountainhead/ftx.css"</xsl:text>
     </xsl:processing-instruction>
     <xsl:text>&#10;</xsl:text>
     <fountain>
-      <front-matter>
-        <xsl:copy-of select="*[following-sibling::*[generate-id(.)=generate-id($first-delimiter)]]"/>
-      </front-matter>
+      <xsl:if test="*[following-sibling::*[generate-id(.)=generate-id($first-delimiter)]]">
+        <!-- weasyprint(1) cannot deal with empty <front-matter/>: it
+             treats it as an HTML opening tag and everything following
+             it as its content, to which it correctly applies
+             display:none -->
+        <front-matter>
+          <xsl:copy-of select="*[following-sibling::*[generate-id(.)=generate-id($first-delimiter)]]"/>
+        </front-matter>
+      </xsl:if>
       <xsl:for-each select="sceneheading|transition">
         <xsl:variable name="next-delimiter"
                       select="(following-sibling::sceneheading|following-sibling::transition)[1]"/>
