@@ -52,7 +52,7 @@
   <xsl:template match="/*">
     <xsl:variable name="first-delimiter" select="(sceneheading|transition)[1]"/>
     <xsl:processing-instruction name="xml-stylesheet">
-      <xsl:text>type="text/css" href="ftx.css"</xsl:text>
+      <xsl:text>type="text/css" href="fountainhead/ftx.css"</xsl:text>
     </xsl:processing-instruction>
     <xsl:text>&#10;</xsl:text>
     <fountain>
@@ -95,6 +95,13 @@
         </xsl:choose>
       </xsl:for-each>
     </fountain>
+  </xsl:template>
+
+  <xsl:template match="slug" mode="copy">
+    <action>
+      <xsl:copy-of select="@*"/>
+      <xsl:apply-templates mode="copy"/>
+    </action>
   </xsl:template>
   
 </xsl:transform>
