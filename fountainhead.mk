@@ -21,6 +21,17 @@ XMLLINT=xmllint
 PANDOC=pandoc
 # http://weasyprint.org/
 WEASYPRINT=weasyprint
+ASPELL=aspell
+AWK=awk
+
+# SPELLCHECK: verifies .fountain and .md files. Projects can add local
+# dictionary terms in $(DICT_FILE). aspell(1) requires that the
+# filename be absolute or start with `./' (the value below would need
+# refinement in case of recursive make(1) invocations)
+DICT_FILE=./aspell.en.pws
+# aspell(1) always exits with status 0; this awk(1) script forces a
+# non-zero status in case aspell(1) finds non-dictionary words in text
+SPELL_STATUS='{print "not in dictionary:", $$0} END {if (NR) exit 1}'
 
 .SUFFIXES: .fountain .tpx .ftx .pdf .md .html
 
@@ -28,6 +39,7 @@ WEASYPRINT=weasyprint
 
 # textplay XML from fountain
 .fountain.tpx:
+	$(ASPELL) list -p $(DICT_FILE) < $< | $(AWK) $(SPELL_STATUS)
 	$(TEXTPLAY) -x < $< > $@
 
 # fountainhead XML (with structure, etc.)
@@ -45,6 +57,7 @@ WEASYPRINT=weasyprint
 
 # markdown renders through HTML intermediary (with TW-style CSS)
 .md.html:
+	$(ASPELL) list -p $(DICT_FILE) < $< | $(AWK) $(SPELL_STATUS)
 	$(PANDOC) -H $(FOUNTAINHEADDIR)/typewriter_css.inc -o $@ $<
 
 # weasyprint PDF from HTML
