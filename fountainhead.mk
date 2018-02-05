@@ -39,7 +39,6 @@ SPELL_STATUS='{print "not in dictionary:", $$0} END {if (NR) exit 1}'
 
 # textplay XML from fountain
 .fountain.tpx:
-	$(ASPELL) list -p $(DICT_FILE) < $< | $(AWK) $(SPELL_STATUS)
 	$(TEXTPLAY) -x < $< > $@
 
 # fountainhead XML (with structure, etc.)
@@ -50,6 +49,8 @@ SPELL_STATUS='{print "not in dictionary:", $$0} END {if (NR) exit 1}'
 # FTX+CSS can render directly in browsers and to PDF, without HTML
 # intermediary
 .ftx.pdf:
+# <note> is where clip information lives now; if this changes, --add-html-skip=note needs to change as well
+	$(ASPELL) list -H --add-html-skip=note -p $(DICT_FILE) < $< | $(AWK) $(SPELL_STATUS)
 	$(WEASYPRINT) -s $(FOUNTAINHEADDIR)/ftx.css $< $@
 
 
