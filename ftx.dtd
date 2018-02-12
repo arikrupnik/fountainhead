@@ -21,7 +21,7 @@
 <!ELEMENT u (%formatting;)*>
 <!ELEMENT i (%formatting;)*>
 
-<!ELEMENT scene (sceneheading, (action|dialogue|note)+)>
+<!ELEMENT scene (sceneheading, (action|dialogue|note|page-break)+)>
 <!ATTLIST scene id ID #IMPLIED>
 <!ELEMENT sceneheading (#PCDATA)>
 <!ELEMENT action (%formatting;)*>
@@ -32,5 +32,7 @@
 <!ELEMENT paren (%formatting;)*>
 
 <!ELEMENT note (#PCDATA)>
+
+<!ELEMENT page-break EMPTY>
 
 <!ELEMENT transition (#PCDATA)>

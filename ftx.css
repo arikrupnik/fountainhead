@@ -72,6 +72,10 @@ transition:first-of-type {
     text-align: inherit;
 }
 
+page-break {
+    page-break-after: always;
+}
+
 b {
     font-weight: bold;
 }
