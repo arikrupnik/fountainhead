@@ -5,8 +5,9 @@
 
   <!-- Wraps scenes in `scene' elements. If scene heading includes
        scene identifier, adds `id' attribute. Assumptions:
-       `sceneheading' elements intorduce new scenes; transitions occur
-       between scenes only, so a CUT TO: forces a new scene. -->
+       `sceneheading' elements intorduce new scenes; transitions and
+       page breaks occur between scenes only, so a CUT TO: or ===
+       forces a new scene. -->
   
   <xsl:output method="xml" indent="yes"/>
 
@@ -50,7 +51,7 @@
   </xsl:template>
 
   <xsl:template match="/*">
-    <xsl:variable name="first-delimiter" select="(sceneheading|transition)[1]"/>
+    <xsl:variable name="first-delimiter" select="(sceneheading|transition|page-break)[1]"/>
     <xsl:processing-instruction name="xml-stylesheet">
       <!-- This PI is for the benefit of browsers that can apply CSS
            directly to XML. weasyprint(1) assumes the input to be
@@ -69,9 +70,9 @@
           <xsl:copy-of select="*[following-sibling::*[generate-id(.)=generate-id($first-delimiter)]]"/>
         </front-matter>
       </xsl:if>
-      <xsl:for-each select="sceneheading|transition">
+      <xsl:for-each select="sceneheading|transition|page-break">
         <xsl:variable name="next-delimiter"
-                      select="(following-sibling::sceneheading|following-sibling::transition)[1]"/>
+                      select="(following-sibling::sceneheading|following-sibling::transition|following-sibling::page-break)[1]"/>
         <xsl:choose>
           <xsl:when test="self::sceneheading">
             <xsl:variable name="id" select="substring-after(., '#')"/>

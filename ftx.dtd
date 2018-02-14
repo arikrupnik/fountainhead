@@ -2,17 +2,19 @@
 
 <!-- FTX follows, as closely as it can, the structure implicit in a
      Fountain document, but with the structure and semantics explicit
-     in the document. It furthers adheres to the rule that character
-     content represents visible text, such that if all tags
-     disappeared and only element text remained, the screenplay would
-     still read correctly, delta formatting. As such, sections
-     headers, invible in print per Fountain specification, are
-     attributes on relevant elements, but extensions ("V.O.", "O.S.")
-     are element text. -->
+     in the document. As a rule, character content in FTX represents
+     visible text, such that if all tags disappeared and only element
+     text remained, the screenplay would still read correctly, delta
+     formatting. As such, sections headers, invisible in print per
+     Fountain specification, are attributes on relevant elements, but
+     character names are element text rather than attributes
+     on <dialog>. Extensions ("V.O.", "O.S.") are attributes
+     on <character>; this allows validating them with this DTD and
+     simplifies direct CSS formatting of FTX. -->
 
 <!ENTITY % formatting "#PCDATA|b|u|i">
 
-<!ELEMENT fountain (front-matter?, (scene|transition)+)>
+<!ELEMENT fountain (front-matter?, (scene|transition|page-break)+)>
 
 <!-- this needs further development -->
 <!ELEMENT front-matter ANY>
@@ -21,7 +23,7 @@
 <!ELEMENT u (%formatting;)*>
 <!ELEMENT i (%formatting;)*>
 
-<!ELEMENT scene (sceneheading, (action|dialogue|note|page-break)+)>
+<!ELEMENT scene (sceneheading, (action|dialogue|note)+)>
 <!ATTLIST scene id ID #IMPLIED>
 <!ELEMENT sceneheading (#PCDATA)>
 <!ELEMENT action (%formatting;)*>
@@ -33,6 +35,6 @@
 
 <!ELEMENT note (#PCDATA)>
 
-<!ELEMENT page-break EMPTY>
-
 <!ELEMENT transition (#PCDATA)>
+
+<!ELEMENT page-break EMPTY>
