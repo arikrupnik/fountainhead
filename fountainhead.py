@@ -5,7 +5,9 @@ import re
 import xml.etree.ElementTree as ET
 
 # fountain source element types
-SCENEHEADING = "scene-heading"
+TITLE_PAGE = "title-page"
+
+SCENE_HEADING = "scene-heading"
 ACTION = "action"
 CHARACTER = "character"
 DIALOGUE = "dialogue"
@@ -13,7 +15,7 @@ PARENTHETICAL = "parenthetical"
 TRANSITION = "transition"
 NOTE = "note"
 BONEYARD = "boneyard"
-SECTIONHEADING = "h"
+SECTION_HEADING = "section-heading"
 SYNOPSIS = "synopsis"
 PAGEBREAK = "page-break"
 
@@ -24,9 +26,7 @@ def parse(lines):
     title, body = split_title_body(lines)
     parse_title(title, doc)
     body, notes = parse_comments_notes(body)
-    pbody=parse_body(body)
-    for pline in pbody:
-        ET.SubElement(doc, pline.t).text=pline.s
+    pbody=parse_body(body, doc)
     return doc
 
 def split_title_body(lines):
@@ -58,7 +58,7 @@ def parse_title(lines, doc):
     # "Information is encoding (sic) in the format key: value. Keys
     # can have spaces (e. g. Draft date), but must end with a colon."
     if lines:
-        et=ET.SubElement(doc, "title-page")
+        et=ET.SubElement(doc, TITLE_PAGE)
         for l in lines:
             # "Values can be inline with the key or they can be
             # indented on a newline below the key (as shown with
@@ -74,6 +74,8 @@ def parse_title(lines, doc):
                     ET.SubElement(ek, "value").text=value.strip()
             else:
                 ET.SubElement(ek, "value").text=l.strip()
+        # there was an empty line there, important for lookback elements
+        et.tail="\n"
 
 def parse_comments_notes(lines):
     text="\n".join(lines)
@@ -88,70 +90,52 @@ def parse_comments_notes(lines):
             out_text+=token
     return out_text.split("\n"), notes
 
-
-class tstr(object):
-    def __init__(self, t, s):
-        self.t=t
-        self.s=s
-
-def parse_body(lines):
+def parse_body(lines, doc):
     # this loop is a little awkward; it must accomodate fountain
     # requirements for lookback and lookahead ("A Scene Heading is any
     # line that has a blank line following it")
     if not len(lines):
-        return None
-    plines=[]
-    prevline=tstr(None, "")
+        return
     line = lines[0]
     for nextline in lines[1:]:
-        pline=parse_line(line, prevline, nextline)
-        if pline.t:
-            plines+=[pline]
-        prevline=pline
+        parse_line(line, doc, nextline)
         line=nextline
-    nextline=None
-    pline=parse_line(line, prevline, nextline)
-    if pline.t:
-        plines+=[pline]
-    plines=consolidate_consecutive(plines, (ACTION, DIALOGUE))
-    return plines
+    parse_line(line, doc, None)
 
-def parse_line(line, prevline, nextline):
+def parse_line(line, doc, nextline):
     if not line:
-        # whitespace, including empty lines, is meaningful inside ACTION
-        if prevline.t==ACTION:
-            return tstr(ACTION, line)
-        else:
-            return tstr(None, line)
+        return push_element(doc, None, line)
     
     sline = line.strip()
     
     # first, I consider forcing elements
+    
     # "Note that only a single leading period followed by an
     # alphanumeric character will force a Scene Heading. This allows
     # the writer to begin Action and Dialogue elements with ellipses
     # without worry that they'll be interpreted as Scene Headings."
     if sline.startswith(".") and not sline.startswith(".."):
-        return tstr(SCENEHEADING, sline[1:].lstrip())
+        return push_element(doc, SCENE_HEADING, sline[1:].lstrip())
     if sline.startswith("!"):
-        return tstr(ACTION, sline[1:])
+        return push_element(doc, ACTION, sline[1:])
     if sline.startswith("@"):
-        return tstr(CHARACTER, sline[1:].lstrip())
+        return push_element(doc, CHARACTER, sline[1:].lstrip())
     if sline.startswith(">") and not sline.endswith("<"):
-        return tstr(TRANSITION, sline[1:].lstrip())
+        return push_element(doc, TRANSITION, sline[1:].lstrip())
 
-    # next, handle context-free elements
+    # next, I handle context-free elements
+    
     if sline.startswith("#"):
-        #If there are capturing groups in the separator and it matches
-        #at the start of the string, the result will start with an
-        #empty string.
+        # "If there are capturing groups in the separator and it
+        # matches at the start of the string, the result will start
+        # with an empty string."
         _,marker,text=re.split(r"(#{1,6})", sline, maxsplit=1)
-        return tstr(SECTIONHEADING+str(len(marker)), text.strip())
+        return push_section_heading(doc, len(marker), text.strip())
     # page breaks may look like synopses, so I process them first
     if re.match(r"^===+$", sline):
-        return tstr(PAGEBREAK, "")
+        return push_element(doc, PAGEBREAK, "")
     if sline.startswith("="):
-        return tstr(SYNOPSIS, sline[1:].lstrip())
+        return push_element(doc, SYNOPSIS, sline[1:].lstrip())
 
     # next, elements that require lookahead or lookback
     
@@ -163,53 +147,67 @@ def parse_line(line, prevline, nextline):
     # dot or a space, is considered a Scene Heading (unless the line
     # is preceded by an exclamation point !). Case insensitive.
     # INT  EXT  EST  INT./EXT  INT/EXT  I/E"
-    if not prevline.s:
+    if last_line_empty(doc):
         if not nextline:
             token = re.split(r"[\. ]", sline+" ")[0].upper()
             if token in ("INT", "EXT", "EST", "INT/EXT", "I/E"):
-                return tstr(SCENEHEADING, sline)
+                return push_element(doc, SCENE_HEADING, sline)
 
     # "A Character element is any line entirely in uppercase, with one
     # empty line before it and without an empty line after it."
-    if not prevline.s:
+    if last_line_empty(doc):
         if nextline:
             if line.upper()==line:
                 # "Character names must include at least one
                 # alphabetical character. "R2D2" works, but "23" does
                 # not."
                 if re.sub(r"[0-9_]", "", re.sub(r"\W", "", line)):
-                    return tstr(CHARACTER, sline)
+                    return push_element(doc, CHARACTER, sline)
                 # "The requirements for Transition elements are:
                 # Uppercase; Preceded by and followed by an empty
                 # line; Ending in TO:"
                 if line.endswith("TO:"):
-                    return tstr(TRANSITION, sline)
+                    return push_element(doc, TRANSITION, sline)
 
     # "Parentheticals follow a Character or Dialogue element, and are
     # wrapped in parentheses ()."
-    if prevline.t in (CHARACTER, PARENTHETICAL, DIALOGUE):
+    if len(doc) and doc[-1].tag in (CHARACTER, PARENTHETICAL, DIALOGUE):
         if re.match(r"^\(.*\)$", sline):
-            return tstr(PARENTHETICAL, sline)
+            return push_element(doc, PARENTHETICAL, sline)
         else:
-            # "Dialogue is any text following a Character or Parenthetical element."
-            return tstr(DIALOGUE, sline)
-
+            # "Dialogue is any text following a Character or
+            # Parenthetical element."
+            return push_element(doc, DIALOGUE, sline)
+    
     # finally, "Action, or scene description, is any paragraph that
     # doesn't meet criteria for another element"
-    return tstr(ACTION, line)
+    return push_element(doc, ACTION, line)
 
-def consolidate_consecutive(plines, element_names):
-    # this has to happen in a separate step; action lines can come
-    # from separate code branches (forced or not) and consolidating
-    # them at parsing would require duplicating code among those
-    # branches
-    result=[]
-    for p in plines:
-        if result and p.t in element_names and result[-1].t==p.t:
-            result[-1].s+="\n"+p.s
-        else:
-            result+=[p]
-    return result
+def last_line_empty(elements):
+    if not len(elements):
+        return True
+    else:
+        return elements[-1].tail=="\n"
+
+def push_element(parent, tag, text):
+    if tag==None:
+        if len(parent):
+            if parent[-1].tag==ACTION:
+                parent[-1].text+="\n"
+            parent[-1].tail="\n"
+    elif tag in (ACTION, DIALOGUE) and len(parent) and parent[-1].tag==tag:
+        parent[-1].text+="\n"+text
+    else:
+        if len(parent):
+            parent[-1].tail=""
+        e=ET.SubElement(parent, tag)
+        e.text=text
+        return e
+
+def push_section_heading(parent, level, text):
+    e=push_element(parent, SECTION_HEADING, text)
+    e.set("level", str(level))
+    return e
 
 # TODO: formatting: inlines
 # TODO: formatting: center
@@ -217,9 +215,11 @@ def consolidate_consecutive(plines, element_names):
 # TODO: dual dialogue
 # TODO: scene numbers
 # TODO: reconstitute notes and clean up linefeeds around them
-# TODO: reconstitute structure (sections, scenes)
+# TODO: reconstitute structure: sections
+# TODO: reconstitute structure: scenes
+# TODO: reconstitute structure: dialogue
 # TODO: character extensions
-    
+
 def main(argv):
     print ET.tostring(parse(open(argv[1])))
 
