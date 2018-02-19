@@ -22,16 +22,9 @@ def parse(lines):
     doc=ET.Element("fountain")
     lines=map(lambda l: l.rstrip("\r\n"), lines)
     title, body = split_title_body(lines)
-    ptitle=parse_title(title)
+    parse_title(title, doc)
     body, notes = parse_comments_notes(body)
     pbody=parse_body(body)
-    if title:
-        et=ET.SubElement(doc, "title-page")
-        for key in ptitle:
-            ek=ET.SubElement(et, "key")
-            ek.set("name", key[0])
-            for value in key[1:]:
-                ET.SubElement(ek, "value").text=value
     for pline in pbody:
         ET.SubElement(doc, pline.t).text=pline.s
     return doc
@@ -61,19 +54,26 @@ def discard_leading_empty_lines(lines):
             return lines[n:]
     return []
 
-def parse_title(lines):
+def parse_title(lines, doc):
     # "Information is encoding (sic) in the format key: value. Keys
     # can have spaces (e. g. Draft date), but must end with a colon."
-    rawkeys=[]
-    for l in lines:
-        if l==l.lstrip():
-            rawkeys.append(l.split(":", 1))
-        else:
-            rawkeys[-1].append(l)
-    keys=[]
-    for k in rawkeys:
-        keys.append(filter(lambda s: s, map(lambda s: s.strip(), k)))
-    return keys
+    if lines:
+        et=ET.SubElement(doc, "title-page")
+        for l in lines:
+            # "Values can be inline with the key or they can be
+            # indented on a newline below the key (as shown with
+            # Contact above). Indenting is 3 or more spaces, or a
+            # tab. The indenting pattern allows multiple values for
+            # the same key (multiple authors, multiple address
+            # lines)."
+            if l==l.lstrip():
+                key, value=l.split(":", 1)
+                ek=ET.SubElement(et, "key")
+                ek.set("name", key)
+                if value:
+                    ET.SubElement(ek, "value").text=value.strip()
+            else:
+                ET.SubElement(ek, "value").text=l.strip()
 
 def parse_comments_notes(lines):
     text="\n".join(lines)
@@ -211,7 +211,7 @@ def consolidate_consecutive(plines, element_names):
             result+=[p]
     return result
 
-# TODO: formatting: including inlines
+# TODO: formatting: inlines
 # TODO: formatting: center
 # TODO: lyrics
 # TODO: dual dialogue
