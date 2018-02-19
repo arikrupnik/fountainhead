@@ -115,7 +115,7 @@ def parse_line(line, doc, nextline):
     # the writer to begin Action and Dialogue elements with ellipses
     # without worry that they'll be interpreted as Scene Headings."
     if sline.startswith(".") and not sline.startswith(".."):
-        return push_element(doc, SCENE_HEADING, sline[1:].lstrip())
+        return push_scene_heading(doc, sline[1:].lstrip())
     if sline.startswith("!"):
         return push_element(doc, ACTION, sline[1:])
     if sline.startswith("@"):
@@ -151,7 +151,7 @@ def parse_line(line, doc, nextline):
         if not nextline:
             token = re.split(r"[\. ]", sline+" ")[0].upper()
             if token in ("INT", "EXT", "EST", "INT/EXT", "I/E"):
-                return push_element(doc, SCENE_HEADING, sline)
+                return push_scene_heading(doc, sline)
 
     # "A Character element is any line entirely in uppercase, with one
     # empty line before it and without an empty line after it."
@@ -204,16 +204,26 @@ def push_element(parent, tag, text):
         e.text=text
         return e
 
+def push_scene_heading(parent, text):
+    tokens=re.split(r"(#.*?#$)", text)
+    print >> sys.stderr, tokens
+    if len(tokens)==1:
+        e=push_element(parent, SCENE_HEADING, text)
+    else:
+        e=push_element(parent, SCENE_HEADING, tokens[0].strip())
+        e.set("id", tokens[1].strip("#"))
+    return e
+
 def push_section_heading(parent, level, text):
     e=push_element(parent, SECTION_HEADING, text)
     e.set("level", str(level))
     return e
 
+# TODO: record empty line after SYNOPSIS, SECTION_HEADING, PAGE_BREAK, others?
 # TODO: formatting: inlines
 # TODO: formatting: center
 # TODO: lyrics
 # TODO: dual dialogue
-# TODO: scene numbers
 # TODO: reconstitute notes and clean up linefeeds around them
 # TODO: reconstitute structure: sections
 # TODO: reconstitute structure: scenes
