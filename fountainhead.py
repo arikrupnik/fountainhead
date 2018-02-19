@@ -10,6 +10,7 @@ TITLE_PAGE = "title-page"
 SCENE_HEADING = "scene-heading"
 ACTION = "action"
 CHARACTER = "character"
+EXTENSION = "extension"         # the spec alludes to this without calling it an element
 DIALOGUE = "dialogue"
 PARENTHETICAL = "parenthetical"
 TRANSITION = "transition"
@@ -119,7 +120,7 @@ def parse_line(line, doc, nextline):
     if sline.startswith("!"):
         return push_element(doc, ACTION, sline[1:])
     if sline.startswith("@"):
-        return push_element(doc, CHARACTER, sline[1:].lstrip())
+        return push_character(doc, sline[1:].lstrip())
     if sline.startswith(">") and not sline.endswith("<"):
         return push_element(doc, TRANSITION, sline[1:].lstrip())
 
@@ -162,7 +163,7 @@ def parse_line(line, doc, nextline):
                 # alphabetical character. "R2D2" works, but "23" does
                 # not."
                 if re.sub(r"[0-9_]", "", re.sub(r"\W", "", line)):
-                    return push_element(doc, CHARACTER, sline)
+                    return push_character(doc, sline)
                 # "The requirements for Transition elements are:
                 # Uppercase; Preceded by and followed by an empty
                 # line; Ending in TO:"
@@ -171,7 +172,7 @@ def parse_line(line, doc, nextline):
 
     # "Parentheticals follow a Character or Dialogue element, and are
     # wrapped in parentheses ()."
-    if len(doc) and doc[-1].tag in (CHARACTER, PARENTHETICAL, DIALOGUE):
+    if len(doc) and doc[-1].tag in (CHARACTER, EXTENSION, PARENTHETICAL, DIALOGUE):
         if re.match(r"^\(.*\)$", sline):
             return push_element(doc, PARENTHETICAL, sline)
         else:
@@ -206,12 +207,28 @@ def push_element(parent, tag, text):
 
 def push_scene_heading(parent, text):
     tokens=re.split(r"(#.*?#$)", text)
-    print >> sys.stderr, tokens
     if len(tokens)==1:
         e=push_element(parent, SCENE_HEADING, text)
     else:
         e=push_element(parent, SCENE_HEADING, tokens[0].strip())
         e.set("id", tokens[1].strip("#"))
+    return e
+
+def push_character(parent, text):
+    if text.endswith("^"):
+        dual=True
+        text=text[:-1].strip()
+    else:
+        dual=False
+    tokens=filter(lambda s: s,
+                  map(lambda s: s.strip(),
+                      re.split(r"(\(.*?\))", text)))
+    print >> sys.stderr, tokens, tokens[1:]
+    e=push_element(parent, CHARACTER, tokens[0])
+    if dual:
+        e.set("dual", "dual")
+    for extension in tokens[1:]:
+        e=push_element(parent, EXTENSION, extension)
     return e
 
 def push_section_heading(parent, level, text):
@@ -223,12 +240,10 @@ def push_section_heading(parent, level, text):
 # TODO: formatting: inlines
 # TODO: formatting: center
 # TODO: lyrics
-# TODO: dual dialogue
 # TODO: reconstitute notes and clean up linefeeds around them
 # TODO: reconstitute structure: sections
 # TODO: reconstitute structure: scenes
 # TODO: reconstitute structure: dialogue
-# TODO: character extensions
 
 def main(argv):
     print ET.tostring(parse(open(argv[1])))
