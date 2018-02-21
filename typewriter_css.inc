@@ -7,7 +7,9 @@
 * { font-family: monospace; font-size: 12pt; }
 body { width: 7in; }
 em { text-decoration: underline; font-style: inherit; }
-h1 { text-decoration: underline; }
+ol, ul { padding-left: 1em; }
+h1, h2 { text-align: center; text-decoration: underline; }
+h2 { font-weight: normal; }
 *+h1 { margin-top: 18pt; }
 
 @media print {
