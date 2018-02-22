@@ -2,7 +2,10 @@
 
 import sys
 import re
+import codecs
 import xml.etree.ElementTree as ET
+import markdown
+import markdown.inlinepatterns as ip
 
 # fountain source element types
 TITLE_PAGE = "title-page"
@@ -18,7 +21,7 @@ NOTE = "note"
 BONEYARD = "boneyard"
 SECTION_HEADING = "section-heading"
 SYNOPSIS = "synopsis"
-PAGEBREAK = "page-break"
+PAGE_BREAK = "page-break"
 
 
 def parse(lines):
@@ -28,6 +31,7 @@ def parse(lines):
     parse_title(title, doc)
     body, notes = parse_comments_notes(body)
     pbody=parse_body(body, doc)
+    doc=parse_inlines(doc)
     return doc
 
 def split_title_body(lines):
@@ -41,13 +45,12 @@ def split_title_body(lines):
        (lines[0].strip().upper()=="FADE IN:"):
         # no title page
         return ((),lines)
-    title_lines=[]
+    # title page present, need to find where it ends
     for n, l in enumerate(lines):
-        title_lines+=[l]
-        if n>0 and not title_lines[-1] and not title_lines[-2]:
-            return (title_lines[:-2], discard_leading_empty_lines(lines[n+1:]))
+        if not l:
+            return (lines[:n], lines[n:])
     # title page only
-    return (title_lines, ())
+    return (lines, ())
 
 def discard_leading_empty_lines(lines):
     for n, l in enumerate(lines):
@@ -75,8 +78,6 @@ def parse_title(lines, doc):
                     ET.SubElement(ek, "value").text=value.strip()
             else:
                 ET.SubElement(ek, "value").text=l.strip()
-        # there was an empty line there, important for lookback elements
-        et.tail="\n"
 
 def parse_comments_notes(lines):
     text="\n".join(lines)
@@ -91,6 +92,8 @@ def parse_comments_notes(lines):
             out_text+=token
     return out_text.split("\n"), notes
 
+# Parsing lines of text into text-only elements
+
 def parse_body(lines, doc):
     # this loop is a little awkward; it must accomodate fountain
     # requirements for lookback and lookahead ("A Scene Heading is any
@@ -104,9 +107,6 @@ def parse_body(lines, doc):
     parse_line(line, doc, None)
 
 def parse_line(line, doc, nextline):
-    if not line:
-        return push_element(doc, None, line)
-    
     sline = line.strip()
     
     # first, I consider forcing elements
@@ -134,7 +134,7 @@ def parse_line(line, doc, nextline):
         return push_section_heading(doc, len(marker), text.strip())
     # page breaks may look like synopses, so I process them first
     if re.match(r"^===+$", sline):
-        return push_element(doc, PAGEBREAK, "")
+        return push_element(doc, PAGE_BREAK, "")
     if sline.startswith("="):
         return push_element(doc, SYNOPSIS, sline[1:].lstrip())
 
@@ -153,6 +153,12 @@ def parse_line(line, doc, nextline):
             token = re.split(r"[\. ]", sline+" ")[0].upper()
             if token in ("INT", "EXT", "EST", "INT/EXT", "I/E"):
                 return push_scene_heading(doc, sline)
+            if line.upper()==line:
+                # "The requirements for Transition elements are:
+                # Uppercase; Preceded by and followed by an empty
+                # line; Ending in TO:"
+                if line.endswith("TO:"):
+                    return push_element(doc, TRANSITION, sline)
 
     # "A Character element is any line entirely in uppercase, with one
     # empty line before it and without an empty line after it."
@@ -164,20 +170,15 @@ def parse_line(line, doc, nextline):
                 # not."
                 if re.sub(r"[0-9_]", "", re.sub(r"\W", "", line)):
                     return push_character(doc, sline)
-                # "The requirements for Transition elements are:
-                # Uppercase; Preceded by and followed by an empty
-                # line; Ending in TO:"
-                if line.endswith("TO:"):
-                    return push_element(doc, TRANSITION, sline)
 
+    # "Dialogue is any text following a Character or Parenthetical
+    # element." (really, any non-empty line -ak)
     # "Parentheticals follow a Character or Dialogue element, and are
     # wrapped in parentheses ()."
-    if len(doc) and doc[-1].tag in (CHARACTER, EXTENSION, PARENTHETICAL, DIALOGUE):
+    if line and len(doc) and doc[-1].tag in (CHARACTER, EXTENSION, PARENTHETICAL, DIALOGUE):
         if re.match(r"^\(.*\)$", sline):
             return push_element(doc, PARENTHETICAL, sline)
         else:
-            # "Dialogue is any text following a Character or
-            # Parenthetical element."
             return push_element(doc, DIALOGUE, sline)
     
     # finally, "Action, or scene description, is any paragraph that
@@ -187,23 +188,27 @@ def parse_line(line, doc, nextline):
 def last_line_empty(elements):
     if not len(elements):
         return True
+    elif elements[-1].tag in (
+            TITLE_PAGE, PAGE_BREAK, # first line on a page has no preceeding line
+            SYNOPSIS, SECTION_HEADING, # removing these leaves empty lines
+            SCENE_HEADING, TRANSITION # require empty line in source, imply one in tree
+    ):
+        return True
     else:
-        return elements[-1].tail=="\n"
+        return (not elements[-1].text) or elements[-1].text.endswith("\n")
 
 def push_element(parent, tag, text):
-    if tag==None:
-        if len(parent):
-            if parent[-1].tag==ACTION:
-                parent[-1].text+="\n"
-            parent[-1].tail="\n"
-    elif tag in (ACTION, DIALOGUE) and len(parent) and parent[-1].tag==tag:
+    if tag in (ACTION, DIALOGUE) and len(parent) and parent[-1].tag==tag:
+        # append line to multi-line elements
         parent[-1].text+="\n"+text
+        e=parent[-1]
     else:
-        if len(parent):
-            parent[-1].tail=""
+        if len(parent) and parent[-1].tag==ACTION and not parent[-1].text:
+            # remove empty <action /> that comes from individual empty lines
+            parent.remove(parent[-1])
         e=ET.SubElement(parent, tag)
         e.text=text
-        return e
+    return e
 
 def push_scene_heading(parent, text):
     tokens=re.split(r"(#.*?#$)", text)
@@ -223,7 +228,6 @@ def push_character(parent, text):
     tokens=filter(lambda s: s,
                   map(lambda s: s.strip(),
                       re.split(r"(\(.*?\))", text)))
-    print >> sys.stderr, tokens, tokens[1:]
     e=push_element(parent, CHARACTER, tokens[0])
     if dual:
         e.set("dual", "dual")
@@ -236,17 +240,76 @@ def push_section_heading(parent, level, text):
     e.set("level", str(level))
     return e
 
-# TODO: record empty line after SYNOPSIS, SECTION_HEADING, PAGE_BREAK, others?
-# TODO: formatting: inlines
+
+# Inline Formatting and Mixed Content
+
+"""Adds text at the end of an ET element. Handles mixed content
+correctly, appending the argument text to argument element's text or
+the tail of its last child, as necessary."""
+def append_text_node(e, text):
+    if len(e):
+        if e[-1].tail:
+            e[-1].tail+=text
+        else:
+            e[-1].tail=text
+    else:
+        if e.text:
+            e.text+=text
+        else:
+            e.text=text
+
+def parse_inlines(e):
+    result=ET.Element(e.tag, attrib=e.attrib)
+    if e.text:
+        for n, l in enumerate(e.text.split("\n")):
+            if n:
+                append_text_node(result, "\n")
+            mds=markdown.markdown(l, extensions=[FountainInlines()])
+            if mds:
+                # markdown returns mixed content wrapped in <p>
+                p=ET.fromstring(mds.encode("utf-8"))
+                if p.text:
+                    append_text_node(result, p.text)
+                result.extend(p)
+            else:
+                append_text_node(result, l)
+    for child in e:
+        result.append(parse_inlines(child))
+        # if input has mixed content, parse child.tail; extend result
+        # from p; child.tail=p.tail
+    return result
+
+"""Markdown extension that captures Fountain inline emphasis rules.
+Fountain recognizes only underline, italic and bold inlines, and these
+it calls out as such rather than generic "emphasis." This extension
+removes all built-in Markdown patterms and installs Fountain-specific
+ones."""
+class FountainInlines(markdown.extensions.Extension):
+    def extendMarkdown(self, md, md_globals):
+        md.inlinePatterns.clear()
+        md.inlinePatterns["escape"] = ip.EscapePattern(r'\\(.)', md)
+        # stand-alone * or _
+        md.inlinePatterns["not_em"] = ip.SimpleTextPattern(r'((^| )(\*|_)( |$))')
+        # ***italic bold*** or ***italic*bold**
+        md.inlinePatterns["b_i"]    = ip.DoubleTagPattern(r'(\*)\2{2}(.+?)\2(.*?)\2{2}', 'b,i')
+        # ***bold**italic*
+        md.inlinePatterns["i_b"]    = ip.DoubleTagPattern(r'(\*)\2{2}(.+?)\2{2}(.*?)\2', 'i,b')
+        # **bold**
+        md.inlinePatterns["b"]      = ip.SimpleTagPattern(r'(\*{2})(.+?)\2', 'b')
+        # *italic*
+        md.inlinePatterns["i"]      = ip.SimpleTagPattern(r'(\*)([^\*]+)\2', 'i')
+        # _underline_
+        md.inlinePatterns["u"]      = ip.SimpleTagPattern(r'(_)(.+?)\2', 'u')
+
 # TODO: formatting: center
-# TODO: lyrics
+# TODO: formatting: lyrics
 # TODO: reconstitute notes and clean up linefeeds around them
 # TODO: reconstitute structure: sections
 # TODO: reconstitute structure: scenes
 # TODO: reconstitute structure: dialogue
 
 def main(argv):
-    print ET.tostring(parse(open(argv[1])))
+    print ET.tostring(parse(codecs.open(argv[1], encoding="utf-8")))
 
 if __name__ == "__main__":
     main(sys.argv)
