@@ -3,18 +3,20 @@
 import sys
 import re
 import codecs
-import xml.etree.ElementTree as ET
+import xml.dom.minidom
 import markdown
 import markdown.inlinepatterns as ip
 
 # fountain source element types
 TITLE_PAGE = "title-page"
+TITLE_KEY = "key"
+TITLE_VALUE = "value"
 
 SCENE_HEADING = "scene-heading"
 ACTION = "action"
 CHARACTER = "character"
 EXTENSION = "extension"         # the spec alludes to this without calling it an element
-DIALOGUE = "dialogue"
+DIALOGUE = "line"               # the spec calls each line "dialogue;" fountainhead wraps each character's lines in <dialogue>
 PARENTHETICAL = "parenthetical"
 TRANSITION = "transition"
 NOTE = "note"
@@ -25,13 +27,13 @@ PAGE_BREAK = "page-break"
 
 
 def parse(lines):
-    doc=ET.Element("fountain")
+    doc=xml.dom.minidom.getDOMImplementation().createDocument(None, "fountain", None)
     lines=map(lambda l: l.rstrip("\r\n"), lines)
     title, body = split_title_body(lines)
-    parse_title(title, doc)
+    parse_title(title, doc.documentElement)
     body, notes = parse_comments_notes(body)
-    pbody=parse_body(body, doc)
-    doc=parse_inlines(doc)
+    pbody=parse_body(body, doc.documentElement)
+    parse_inlines(doc)
     return doc
 
 def split_title_body(lines):
@@ -58,11 +60,11 @@ def discard_leading_empty_lines(lines):
             return lines[n:]
     return []
 
-def parse_title(lines, doc):
+def parse_title(lines, fountain):
     # "Information is encoding (sic) in the format key: value. Keys
     # can have spaces (e. g. Draft date), but must end with a colon."
     if lines:
-        et=ET.SubElement(doc, TITLE_PAGE)
+        et=subElement(fountain, TITLE_PAGE)
         for l in lines:
             # "Values can be inline with the key or they can be
             # indented on a newline below the key (as shown with
@@ -72,12 +74,12 @@ def parse_title(lines, doc):
             # lines)."
             if l==l.lstrip():
                 key, value=l.split(":", 1)
-                ek=ET.SubElement(et, "key")
-                ek.set("name", key)
+                ek=subElement(et, TITLE_KEY)
+                ek.setAttribute("name", key)
                 if value:
-                    ET.SubElement(ek, "value").text=value.strip()
+                    subElementWithText(ek, TITLE_VALUE, value.strip())
             else:
-                ET.SubElement(ek, "value").text=l.strip()
+                subElementWithText(ek, TITLE_VALUE, l.strip())
 
 def parse_comments_notes(lines):
     text="\n".join(lines)
@@ -94,7 +96,7 @@ def parse_comments_notes(lines):
 
 # Parsing lines of text into text-only elements
 
-def parse_body(lines, doc):
+def parse_body(lines, fountain):
     # this loop is a little awkward; it must accomodate fountain
     # requirements for lookback and lookahead ("A Scene Heading is any
     # line that has a blank line following it")
@@ -102,11 +104,11 @@ def parse_body(lines, doc):
         return
     line = lines[0]
     for nextline in lines[1:]:
-        parse_line(line, doc, nextline)
+        parse_line(line, fountain, nextline)
         line=nextline
-    parse_line(line, doc, None)
+    parse_line(line, fountain, None)
 
-def parse_line(line, doc, nextline):
+def parse_line(line, fountain, nextline):
     sline = line.strip()
     
     # first, I consider forcing elements
@@ -116,13 +118,13 @@ def parse_line(line, doc, nextline):
     # the writer to begin Action and Dialogue elements with ellipses
     # without worry that they'll be interpreted as Scene Headings."
     if sline.startswith(".") and not sline.startswith(".."):
-        return push_scene_heading(doc, sline[1:].lstrip())
+        return push_scene_heading(fountain, sline[1:].lstrip())
     if sline.startswith("!"):
-        return push_element(doc, ACTION, sline[1:])
+        return push_element(fountain, ACTION, sline[1:])
     if sline.startswith("@"):
-        return push_character(doc, sline[1:].lstrip())
+        return push_character(fountain, sline[1:].lstrip())
     if sline.startswith(">") and not sline.endswith("<"):
-        return push_element(doc, TRANSITION, sline[1:].lstrip())
+        return push_element(fountain, TRANSITION, sline[1:].lstrip())
 
     # next, I handle context-free elements
     
@@ -131,12 +133,12 @@ def parse_line(line, doc, nextline):
         # matches at the start of the string, the result will start
         # with an empty string."
         _,marker,text=re.split(r"(#{1,6})", sline, maxsplit=1)
-        return push_section_heading(doc, len(marker), text.strip())
+        return push_section_heading(fountain, len(marker), text.strip())
     # page breaks may look like synopses, so I process them first
     if re.match(r"^===+$", sline):
-        return push_element(doc, PAGE_BREAK, "")
+        return push_element(fountain, PAGE_BREAK, "")
     if sline.startswith("="):
-        return push_element(doc, SYNOPSIS, sline[1:].lstrip())
+        return push_element(fountain, SYNOPSIS, sline[1:].lstrip())
 
     # next, elements that require lookahead or lookback
     
@@ -148,66 +150,70 @@ def parse_line(line, doc, nextline):
     # dot or a space, is considered a Scene Heading (unless the line
     # is preceded by an exclamation point !). Case insensitive.
     # INT  EXT  EST  INT./EXT  INT/EXT  I/E"
-    if last_line_empty(doc):
+    if last_line_empty(fountain):
         if not nextline:
             token = re.split(r"[\. ]", sline+" ")[0].upper()
             if token in ("INT", "EXT", "EST", "INT/EXT", "I/E"):
-                return push_scene_heading(doc, sline)
+                return push_scene_heading(fountain, sline)
             if line.upper()==line:
                 # "The requirements for Transition elements are:
                 # Uppercase; Preceded by and followed by an empty
                 # line; Ending in TO:"
                 if line.endswith("TO:"):
-                    return push_element(doc, TRANSITION, sline)
+                    return push_element(fountain, TRANSITION, sline)
 
     # "A Character element is any line entirely in uppercase, with one
     # empty line before it and without an empty line after it."
-    if last_line_empty(doc):
+    if last_line_empty(fountain):
         if nextline:
             if line.upper()==line:
                 # "Character names must include at least one
                 # alphabetical character. "R2D2" works, but "23" does
                 # not."
                 if re.sub(r"[0-9_]", "", re.sub(r"\W", "", line)):
-                    return push_character(doc, sline)
+                    return push_character(fountain, sline)
 
     # "Dialogue is any text following a Character or Parenthetical
     # element." (really, any non-empty line -ak)
     # "Parentheticals follow a Character or Dialogue element, and are
     # wrapped in parentheses ()."
-    if line and len(doc) and doc[-1].tag in (CHARACTER, EXTENSION, PARENTHETICAL, DIALOGUE):
+    if line and fountain.hasChildNodes() and fountain.lastChild.nodeName in (CHARACTER, EXTENSION, PARENTHETICAL, DIALOGUE):
         if re.match(r"^\(.*\)$", sline):
-            return push_element(doc, PARENTHETICAL, sline)
+            return push_element(fountain, PARENTHETICAL, sline)
         else:
-            return push_element(doc, DIALOGUE, sline)
+            return push_element(fountain, DIALOGUE, sline)
     
     # finally, "Action, or scene description, is any paragraph that
     # doesn't meet criteria for another element"
-    return push_element(doc, ACTION, line)
+    return push_element(fountain, ACTION, line)
 
-def last_line_empty(elements):
-    if not len(elements):
+def last_line_empty(fountain):
+    # assuming fountatin is a flat list of elements, each containing
+    # a single text node
+    if not fountain.hasChildNodes():
         return True
-    elif elements[-1].tag in (
+    elif fountain.lastChild.tagName in (
             TITLE_PAGE, PAGE_BREAK, # first line on a page has no preceeding line
             SYNOPSIS, SECTION_HEADING, # removing these leaves empty lines
             SCENE_HEADING, TRANSITION # require empty line in source, imply one in tree
     ):
         return True
     else:
-        return (not elements[-1].text) or elements[-1].text.endswith("\n")
+        text=fountain.lastChild.lastChild.nodeValue
+        return (not len(text)) or text.endswith("\n")
 
-def push_element(parent, tag, text):
-    if tag in (ACTION, DIALOGUE) and len(parent) and parent[-1].tag==tag:
+def push_element(fountain, tag, text):
+    if tag in (ACTION, DIALOGUE) and fountain.hasChildNodes() and fountain.lastChild.nodeName==tag:
         # append line to multi-line elements
-        parent[-1].text+="\n"+text
-        e=parent[-1]
+        fountain.lastChild.firstChild.nodeValue+="\n"+text
+        e=fountain.lastChild
     else:
-        if len(parent) and parent[-1].tag==ACTION and not parent[-1].text:
-            # remove empty <action /> that comes from individual empty lines
-            parent.remove(parent[-1])
-        e=ET.SubElement(parent, tag)
-        e.text=text
+        if fountain.hasChildNodes():
+            if fountain.lastChild.nodeName==ACTION:
+                if not fountain.lastChild.lastChild.nodeValue:
+                    # remove empty <action /> that comes from individual empty lines
+                    fountain.removeChild(fountain.lastChild)
+        e=subElementWithText(fountain, tag, text)
     return e
 
 def push_scene_heading(parent, text):
@@ -216,7 +222,7 @@ def push_scene_heading(parent, text):
         e=push_element(parent, SCENE_HEADING, text)
     else:
         e=push_element(parent, SCENE_HEADING, tokens[0].strip())
-        e.set("id", tokens[1].strip("#"))
+        e.setAttribute("id", tokens[1].strip("#"))
     return e
 
 def push_character(parent, text):
@@ -230,54 +236,35 @@ def push_character(parent, text):
                       re.split(r"(\(.*?\))", text)))
     e=push_element(parent, CHARACTER, tokens[0])
     if dual:
-        e.set("dual", "dual")
+        e.setAttribute("dual", "dual")
     for extension in tokens[1:]:
-        e=push_element(parent, EXTENSION, extension)
+        subElementWithText(parent, EXTENSION, extension)
     return e
 
 def push_section_heading(parent, level, text):
     e=push_element(parent, SECTION_HEADING, text)
-    e.set("level", str(level))
+    e.setAttribute("level", str(level))
     return e
 
 
 # Inline Formatting and Mixed Content
 
-"""Adds text at the end of an ET element. Handles mixed content
-correctly, appending the argument text to argument element's text or
-the tail of its last child, as necessary."""
-def append_text_node(e, text):
-    if len(e):
-        if e[-1].tail:
-            e[-1].tail+=text
-        else:
-            e[-1].tail=text
-    else:
-        if e.text:
-            e.text+=text
-        else:
-            e.text=text
+def parse_inlines(doc):
+    # assuming these have text-only content at this point
+    for tag in ("value", ACTION, DIALOGUE):
+        for e in doc.getElementsByTagName(tag):
+            text=e.removeChild(e.firstChild).nodeValue
+            for n, l in enumerate(text.split("\n")):
+                if n:
+                    appendText(e, "\n")
+                mds=markdown.markdown(l, extensions=[FountainInlines()])
+                if mds:
+                    p=xml.dom.minidom.parseString(mds.encode("utf-8")).documentElement
+                    c=p.firstChild
+                    while c:
+                        e.appendChild(c)
+                        c=p.firstChild
 
-def parse_inlines(e):
-    result=ET.Element(e.tag, attrib=e.attrib)
-    if e.text:
-        for n, l in enumerate(e.text.split("\n")):
-            if n:
-                append_text_node(result, "\n")
-            mds=markdown.markdown(l, extensions=[FountainInlines()])
-            if mds:
-                # markdown returns mixed content wrapped in <p>
-                p=ET.fromstring(mds.encode("utf-8"))
-                if p.text:
-                    append_text_node(result, p.text)
-                result.extend(p)
-            else:
-                append_text_node(result, l)
-    for child in e:
-        result.append(parse_inlines(child))
-        # if input has mixed content, parse child.tail; extend result
-        # from p; child.tail=p.tail
-    return result
 
 """Markdown extension that captures Fountain inline emphasis rules.
 Fountain recognizes only underline, italic and bold inlines, and these
@@ -301,6 +288,27 @@ class FountainInlines(markdown.extensions.Extension):
         # _underline_
         md.inlinePatterns["u"]      = ip.SimpleTagPattern(r'(_)(.+?)\2', 'u')
 
+
+# DOM utilities
+
+# This is part of DOM Level 1, but apparently has quirks in minidom
+def ownerDocument(node):
+    if node.nodeType==node.DOCUMENT_NODE:
+        return node
+    else:
+        return ownerDocument(node.parentNode)
+
+def subElement(e, tagName):
+    return e.appendChild(ownerDocument(e).createElement(tagName))
+
+def appendText(e, text):
+    return e.appendChild(ownerDocument(e).createTextNode(text))
+
+def subElementWithText(e, tagName, text):
+    e=subElement(e, tagName)
+    appendText(e, text)
+    return e
+
 # TODO: formatting: center
 # TODO: formatting: lyrics
 # TODO: reconstitute notes and clean up linefeeds around them
@@ -309,7 +317,7 @@ class FountainInlines(markdown.extensions.Extension):
 # TODO: reconstitute structure: dialogue
 
 def main(argv):
-    print ET.tostring(parse(codecs.open(argv[1], encoding="utf-8")))
+    print codecs.encode(parse(codecs.open(argv[1], encoding="utf-8")).toxml(), "utf-8")
 
 if __name__ == "__main__":
     main(sys.argv)
