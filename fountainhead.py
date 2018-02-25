@@ -346,6 +346,8 @@ class FountainInlines(markdown.extensions.Extension):
         # between *italic* and _underline_
         md.inlinePatterns.clear()
         md.inlinePatterns["escape"] = ip.EscapePattern(r'\\(.)', md)
+        md.inlinePatterns["center"] = ip.SimpleTagPattern(r'(^\s*>\s*)(.+?)(\s*<\s*$)', "center")
+        md.inlinePatterns["lyric"]  = ip.SimpleTagPattern(r'(^~)(.+?)($)', "lyric")
         # stand-alone * or _
         md.inlinePatterns["not_em"] = ip.SimpleTextPattern(r'((^| )(\*|_)( |$))')
         # ***italic bold*** or ***italic*bold**
@@ -358,7 +360,6 @@ class FountainInlines(markdown.extensions.Extension):
         md.inlinePatterns["i"]      = ip.SimpleTagPattern(r'(\*)([^\*]+)\2', 'i')
         # _underline_
         md.inlinePatterns["u"]      = ip.SimpleTagPattern(r'(_)(.+?)\2', 'u')
-
 
 # DOM utilities
 
@@ -380,8 +381,6 @@ def subElementWithText(e, tagName, text):
     appendText(e, text)
     return e
 
-# TODO: formatting: center
-# TODO: formatting: lyrics
 # TODO: reconstitute notes and clean up linefeeds around them
 # TODO: add syntax for section ids
 
