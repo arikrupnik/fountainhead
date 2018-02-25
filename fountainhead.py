@@ -245,7 +245,12 @@ def push_character(parent, text):
     return e
 
 def push_section_heading(parent, level, text):
-    e=push_element(parent, SECTION_HEADING, text)
+    tokens=re.split(r"(#.*?#$)", text)
+    if len(tokens)==1:
+        e=push_element(parent, SECTION_HEADING, text)
+    else:
+        e=push_element(parent, SECTION_HEADING, tokens[0].strip())
+        e.setAttribute("id", tokens[1].strip("#"))
     e.setAttribute("level", str(level))
     return e
 
@@ -382,7 +387,6 @@ def subElementWithText(e, tagName, text):
     return e
 
 # TODO: reconstitute notes and clean up linefeeds around them
-# TODO: add syntax for section ids
 
 def main(argv):
     print codecs.encode(parse(codecs.open(argv[1], encoding="utf-8")).toxml(), "utf-8")
