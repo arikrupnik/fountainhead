@@ -33,6 +33,9 @@ def parse(lines):
     parse_title(title, doc.documentElement)
     body, notes = parse_comments_notes(body)
     pbody=parse_body(body, doc.documentElement)
+    structure_dialogue(doc)
+    structure_scenes(doc)
+    structure_sections(doc)
     parse_inlines(doc)
     return doc
 
@@ -97,7 +100,7 @@ def parse_comments_notes(lines):
 # Parsing lines of text into text-only elements
 
 def parse_body(lines, fountain):
-    # this loop is a little awkward; it must accomodate fountain
+    # this loop is a little awkward; it must accommodate fountain
     # requirements for lookback and lookahead ("A Scene Heading is any
     # line that has a blank line following it")
     if not len(lines):
@@ -188,12 +191,12 @@ def parse_line(line, fountain, nextline):
     return push_element(fountain, ACTION, line)
 
 def last_line_empty(fountain):
-    # assuming fountatin is a flat list of elements, each containing
-    # a single text node
+    # assuming fountain is a flat list of elements, each containing a
+    # single text node
     if not fountain.hasChildNodes():
         return True
     elif fountain.lastChild.tagName in (
-            TITLE_PAGE, PAGE_BREAK, # first line on a page has no preceeding line
+            TITLE_PAGE, PAGE_BREAK, # first line on a page has no preceding line
             SYNOPSIS, SECTION_HEADING, # removing these leaves empty lines
             SCENE_HEADING, TRANSITION # require empty line in source, imply one in tree
     ):
@@ -246,25 +249,78 @@ def push_section_heading(parent, level, text):
     e.setAttribute("level", str(level))
     return e
 
+# Hierarchical Structures
+
+def structure_dialogue(doc):
+    for ch in doc.getElementsByTagName(CHARACTER):
+        # move extensions inside character
+        n=ch.nextSibling
+        while n and (n.nodeType!=n.ELEMENT_NODE or n.nodeName=="extension"):
+            ch.appendChild(n)
+            n=ch.nextSibling
+        # move lines and parentheticals inside dialogue
+        d=doc.createElement("dialogue")
+        d.appendChild(ch.parentNode.replaceChild(d, ch))
+        n=d.nextSibling
+        while n and (n.nodeType!=n.ELEMENT_NODE or n.nodeName in (PARENTHETICAL,
+                                                                     DIALOGUE)):
+            d.appendChild(n)
+            n=d.nextSibling
+        # dual dialogue
+        if ch.getAttribute("dual")=="dual":
+            ch.removeAttribute("dual")
+            dd=doc.createElement("dual-dialogue")
+            dd.appendChild(d.parentNode.replaceChild(dd, d))
+            if dd.previousSibling.nodeName=="dialogue":
+                dd.insertBefore(dd.previousSibling, d)
+
+def structure_scenes(doc):
+    for sh in doc.getElementsByTagName(SCENE_HEADING):
+        s=doc.createElement("scene")
+        s.appendChild(sh.parentNode.replaceChild(s, sh))
+        n=s.nextSibling
+        while n and (n.nodeType!=n.ELEMENT_NODE or n.nodeName in (SYNOPSIS,
+                                                                  NOTE,
+                                                                  ACTION,
+                                                                  "dialogue",
+                                                                  "dual-dialogue")):
+            s.appendChild(n)
+            n=s.nextSibling
+
+def structure_sections(doc):
+    max_level=0
+    for sh in doc.getElementsByTagName(SECTION_HEADING):
+        max_level=max(max_level, int(sh.getAttribute("level")))
+    for level in range(1, max_level+1):
+        for sh in doc.getElementsByTagName(SECTION_HEADING):
+            if int(sh.getAttribute("level"))==level:
+                s=doc.createElement("section")
+                s.appendChild(sh.parentNode.replaceChild(s, sh))
+                n=s.nextSibling
+                while n and (n.nodeType!=n.ELEMENT_NODE or n.nodeName not in (PAGE_BREAK)):
+                    if n.nodeName==SECTION_HEADING and int(n.getAttribute("level"))<=level:
+                        break
+                    s.appendChild(n)
+                    n=s.nextSibling
 
 # Inline Formatting and Mixed Content
 
 def parse_inlines(doc):
     # assuming these have text-only content at this point
-    for tag in ("value", ACTION, DIALOGUE):
+    m=markdown.Markdown(extensions=[FountainInlines()])
+    for tag in (TITLE_VALUE, ACTION, DIALOGUE):
         for e in doc.getElementsByTagName(tag):
             text=e.removeChild(e.firstChild).nodeValue
             for n, l in enumerate(text.split("\n")):
                 if n:
                     appendText(e, "\n")
-                mds=markdown.markdown(l, extensions=[FountainInlines()])
+                mds=m.convert(l)
                 if mds:
                     p=xml.dom.minidom.parseString(mds.encode("utf-8")).documentElement
                     c=p.firstChild
                     while c:
                         e.appendChild(c)
                         c=p.firstChild
-
 
 """Markdown extension that captures Fountain inline emphasis rules.
 Fountain recognizes only underline, italic and bold inlines, and these
@@ -273,6 +329,21 @@ removes all built-in Markdown patterms and installs Fountain-specific
 ones."""
 class FountainInlines(markdown.extensions.Extension):
     def extendMarkdown(self, md, md_globals):
+        # I use Makrdown to parse inline formatting in individual
+        # lines of text; block structure I handle in parse_line()
+        # above. Unless this strategy changes, none of the block
+        # processors are useful except ParagraphProcessor which wraps
+        # mixed content in <p>'s. Many actively interfere with
+        # Fountain syntax, e.g., BlockQuoteProcessor replaces
+        # '>center<' with <blockquote>center&lt;</blocquote>
+        md.parser.blockprocessors.clear()
+        md.parser.blockprocessors["paragraph"]=\
+            markdown.blockprocessors.ParagraphProcessor(md.parser)
+
+        # I use the markdown mechanism for inlinePatterns, but replace
+        # all built-in patterns. Some markdown patterns look similar
+        # to Fountain but aren't: e.g., Fountain differentiates
+        # between *italic* and _underline_
         md.inlinePatterns.clear()
         md.inlinePatterns["escape"] = ip.EscapePattern(r'\\(.)', md)
         # stand-alone * or _
@@ -312,9 +383,7 @@ def subElementWithText(e, tagName, text):
 # TODO: formatting: center
 # TODO: formatting: lyrics
 # TODO: reconstitute notes and clean up linefeeds around them
-# TODO: reconstitute structure: sections
-# TODO: reconstitute structure: scenes
-# TODO: reconstitute structure: dialogue
+# TODO: add syntax for section ids
 
 def main(argv):
     print codecs.encode(parse(codecs.open(argv[1], encoding="utf-8")).toxml(), "utf-8")
