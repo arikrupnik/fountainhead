@@ -37,6 +37,7 @@ def parse(lines):
     structure_scenes(doc)
     structure_sections(doc)
     parse_inlines(doc)
+    reconstitute_notes(doc, notes)
     return doc
 
 def split_title_body(lines):
@@ -365,6 +366,15 @@ class FountainInlines(markdown.extensions.Extension):
         md.inlinePatterns["i"]      = ip.SimpleTagPattern(r'(\*)([^\*]+)\2', 'i')
         # _underline_
         md.inlinePatterns["u"]      = ip.SimpleTagPattern(r'(_)(.+?)\2', 'u')
+        
+        # not strictly speaking formatting, but these are inline
+        md.inlinePatterns["note"]   = ip.SimpleTagPattern(r'(\n?\[\[)(.+?)(\]\]\n?)', 'note')
+
+
+def reconstitute_notes(doc, notes):
+    for n in doc.getElementsByTagName("note"):
+        appendText(n, notes[int(n.removeChild(n.firstChild).nodeValue)])
+    # TODO: "The empty lines around the Note on its own line would be removed in parsing."
 
 # DOM utilities
 
@@ -385,8 +395,6 @@ def subElementWithText(e, tagName, text):
     e=subElement(e, tagName)
     appendText(e, text)
     return e
-
-# TODO: reconstitute notes and clean up linefeeds around them
 
 def main(argv):
     print codecs.encode(parse(codecs.open(argv[1], encoding="utf-8")).toxml(), "utf-8")
