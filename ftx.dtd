@@ -6,31 +6,66 @@
      content represents visible text, such that if all tags
      disappeared and only element text remained, the screenplay would
      still read correctly, delta formatting. As such, sections
-     headers, invible in print per Fountain specification, are
-     attributes on relevant elements, but extensions ("V.O.", "O.S.")
-     are element text. -->
+     headers, invisible in print per Fountain specification, are
+     attributes on element-only <section>s, but scene headers and
+     character extensions ("V.O.", "O.S.") are element text.
+
+     FTX is an intermediate format. The expectation is that
+     screenwriters continue to author in plaintext Fountain. FTX
+     optimizes for human readability rather than ease of
+     authoring. FTX prefers unambiguous element names to short
+     ones. -->
 
 <!ENTITY % formatting "#PCDATA|b|u|i">
 
-<!ELEMENT fountain (front-matter?, (scene|transition)+)>
+<!ENTITY % scene "action|dialogue|dual-dialogue|synopsis|note">
+<!ENTITY % block "%scene;|scene|transition|section">
 
-<!-- this needs further development -->
-<!ELEMENT front-matter ANY>
+<!ELEMENT fountain (title-page?, (%block;|page-break)*)>
+
+<!-- title page -->
+<!ELEMENT title-page (key+)>
+<!ELEMENT key (value+)>
+<!ATTLIST key name CDATA #REQUIRED>
+<!ELEMENT value (%formatting;)*>
+
+<!-- semantic structure -->
+<!ELEMENT action (%formatting;|note|center|lyric)*>
+
+<!ELEMENT scene (scene-heading, (%scene;)*)>
+<!-- "Scene numbers are any alphanumerics (plus dashes and periods)"
+     so cannot declare ID. -->
+<!ATTLIST scene id CDATA #IMPLIED>
+<!ELEMENT scene-heading (#PCDATA)>
+
+<!ELEMENT dialogue (character, (line|parenthetical)+)>
+<!-- The semantic CM is (#PCDATA, extension*) -->
+<!ELEMENT character (#PCDATA|extension)*>
+<!ELEMENT extension (#PCDATA)>
+<!ELEMENT line (%formatting;|note|center|lyric)*>
+<!ELEMENT parenthetical (#PCDATA)>
+<!ELEMENT dual-dialogue (dialogue, dialogue)>
+
+<!ELEMENT transition (#PCDATA)>
+<!ELEMENT section (%block;)*>
+<!-- Section IDs are a Fountainhead definition, so can be more restrictive -->
+<!ATTLIST section id ID #IMPLIED>
+<!ATTLIST section heading CDATA #REQUIRED>
+
+<!ELEMENT page-break EMPTY>
+
+<!-- non-printing elucidation -->
+<!-- "Synopses are optional blocks of text to describe a Section or scene."
+     Which would naturally make them attributes on <secion> and <scene> but
+     "They can be located anywhere within the screenplay."-->
+<!ELEMENT synopsis (#PCDATA)>
+<!-- Notes can span multiple lines. Putting their content into
+     elements preserves whitespace. -->
+<!ELEMENT note (#PCDATA)>
+
+<!-- inline formatting -->
 <!ELEMENT center (%formatting;)*>
+<!ELEMENT lyric (%formatting;)*>
 <!ELEMENT b (%formatting;)*>
 <!ELEMENT u (%formatting;)*>
 <!ELEMENT i (%formatting;)*>
-
-<!ELEMENT scene (sceneheading, (action|dialogue|note)+)>
-<!ATTLIST scene id ID #IMPLIED>
-<!ELEMENT sceneheading (#PCDATA)>
-<!ELEMENT action (%formatting;)*>
-<!ELEMENT dialogue (character, (talk|paren)+)>
-<!ELEMENT character (#PCDATA)>
-<!ATTLIST character extension (V.O.|O.S.) #IMPLIED>
-<!ELEMENT talk (%formatting;)*>
-<!ELEMENT paren (%formatting;)*>
-
-<!ELEMENT note (#PCDATA)>
-
-<!ELEMENT transition (#PCDATA)>

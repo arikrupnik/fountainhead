@@ -23,7 +23,10 @@ You can't see me
 
 .extension and dual
 
-CHARACTER (O.S.)^
+CHARACTER (O.S.)
+I'm the visible echo
+
+ANOTHER CHARACTER (O.S.)^
 I'm the invisible echo
 
 .using lower case forces line to ACTION

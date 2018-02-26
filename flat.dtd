@@ -1,0 +1,28 @@
+<!-- Simple, flat representation of a Fountain document in XML. This
+format captures all "elements" from the Fountain spec (except
+formatting) as XML elements with text-only content. At this stage, all
+parsing is complete, including parsing IDs out of scene headings and
+extensions from character names. Tree structure is still implicit in
+section and scene headings, etc. -->
+
+<!ENTITY % dialogue-group "(character, extension*, (line|parenthetical)+)">
+<!ELEMENT fountain (title-page?, (action|scene-heading|%dialogue-group;|transition|section-heading|synopsis|page-break)*)>
+
+<!ELEMENT title-page (key+)>
+<!ELEMENT key (value+)>
+<!ATTLIST key name CDATA #REQUIRED>
+<!ELEMENT value                         (#PCDATA)>
+
+<!ELEMENT action                        (#PCDATA)>
+<!ELEMENT scene-heading                 (#PCDATA)>
+<!ATTLIST scene-heading id ID #IMPLIED>
+<!ELEMENT character                     (#PCDATA)>
+<!ATTLIST character dual (dual) #IMPLIED>
+<!ELEMENT extension                     (#PCDATA)>
+<!ELEMENT line                          (#PCDATA)>
+<!ELEMENT parenthetical                 (#PCDATA)>
+<!ELEMENT transition                    (#PCDATA)>
+<!ELEMENT section-heading               (#PCDATA)>
+<!ATTLIST section-heading level CDATA #REQUIRED>
+<!ELEMENT synopsis                      (#PCDATA)>
+<!ELEMENT page-break                        EMPTY>

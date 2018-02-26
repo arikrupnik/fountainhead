@@ -6,6 +6,7 @@ import codecs
 import xml.dom.minidom
 import markdown
 import markdown.inlinepatterns as ip
+import argparse
 
 # fountain source element types
 TITLE_PAGE = "title-page"
@@ -26,13 +27,15 @@ SYNOPSIS = "synopsis"
 PAGE_BREAK = "page-break"
 
 
-def parse(lines):
+def parse_fountain(lines, flat_output):
     doc=xml.dom.minidom.getDOMImplementation().createDocument(None, "fountain", None)
-    lines=map(lambda l: l.rstrip("\r\n"), lines)
+    lines=map(lambda l: unicode(l.rstrip("\r\n"), "utf-8"), lines)
     title, body = split_title_body(lines)
     parse_title(title, doc.documentElement)
     body, notes = parse_comments_notes(body)
     pbody=parse_body(body, doc.documentElement)
+    if flat_output:
+        return doc
     structure_dialogue(doc)
     structure_scenes(doc)
     structure_sections(doc)
@@ -48,7 +51,8 @@ def split_title_body(lines):
     if (lines[0]!=lines[0].lstrip()) or \
        (not ":" in lines[0]) or \
        (re.search(r"[^\w ]", lines[0].split(":")[0])) or \
-       (lines[0].strip().upper()=="FADE IN:"):
+       (lines[0].strip().upper()=="FADE IN:") or \
+       (lines[0].strip().upper().endswith(" TO:")):
         # no title page
         return ((),lines)
     # title page present, need to find where it ends
@@ -284,6 +288,10 @@ def structure_scenes(doc):
     for sh in doc.getElementsByTagName(SCENE_HEADING):
         s=doc.createElement("scene")
         s.appendChild(sh.parentNode.replaceChild(s, sh))
+        id=sh.getAttribute("id")
+        if id:
+            sh.removeAttribute("id")
+            s.setAttribute("id", id)
         n=s.nextSibling
         while n and (n.nodeType!=n.ELEMENT_NODE or n.nodeName in (SYNOPSIS,
                                                                   NOTE,
@@ -301,7 +309,10 @@ def structure_sections(doc):
         for sh in doc.getElementsByTagName(SECTION_HEADING):
             if int(sh.getAttribute("level"))==level:
                 s=doc.createElement("section")
-                s.appendChild(sh.parentNode.replaceChild(s, sh))
+                s.setAttribute("heading", sh.parentNode.replaceChild(s, sh).firstChild.nodeValue)
+                id=sh.getAttribute("id")
+                if id:
+                    s.setAttribute("id", id)
                 n=s.nextSibling
                 while n and (n.nodeType!=n.ELEMENT_NODE or n.nodeName not in (PAGE_BREAK)):
                     if n.nodeName==SECTION_HEADING and int(n.getAttribute("level"))<=level:
@@ -397,7 +408,15 @@ def subElementWithText(e, tagName, text):
     return e
 
 def main(argv):
-    print codecs.encode(parse(codecs.open(argv[1], encoding="utf-8")).toxml(), "utf-8")
+    ap=argparse.ArgumentParser(description="Convert Fountain input to XML.")
+    ap.add_argument("-f", "--flatoutput",
+                    action="store_true",
+                    help="output flat XML without hierarchical structure")
+    ap.add_argument("infile", metavar="file.fountain", nargs="?",
+                    type=argparse.FileType("r"),
+                    default=sys.stdin)
+    args=ap.parse_args()
+    print codecs.encode(parse_fountain(args.infile, args.flatoutput).toxml(), "utf-8")
 
 if __name__ == "__main__":
     main(sys.argv)
