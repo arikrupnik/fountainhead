@@ -39,8 +39,8 @@
 <!ELEMENT scene-heading (#PCDATA)>
 
 <!ELEMENT dialogue (character, (line|parenthetical)+)>
-<!-- The semantic CM is (#PCDATA, extension*) -->
-<!ELEMENT character (#PCDATA|extension)*>
+<!ELEMENT character (name|extension*)>
+<!ELEMENT name (#PCDATA)>
 <!ELEMENT extension (#PCDATA)>
 <!ELEMENT line (%formatting;|note|center|lyric)*>
 <!ELEMENT parenthetical (#PCDATA)>

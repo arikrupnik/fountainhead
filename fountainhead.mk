@@ -10,9 +10,7 @@
 
 # DEPENDENCIES
 
-# https://github.com/olivertaylor/Textplay (fountainhead includes this
-# as a submodule)
-TEXTPLAY=$(FOUNTAINHEADDIR)/Textplay/textplay
+PYTHON=python
 # http://xmlsoft.org/XSLT/xsltproc2.html
 XSLTPROC=xsltproc
 # http://xmlsoft.org/xmllint.html
@@ -22,17 +20,13 @@ PANDOC=pandoc
 # http://weasyprint.org/
 WEASYPRINT=weasyprint
 
-.SUFFIXES: .fountain .tpx .ftx .pdf .md .html
+.SUFFIXES: .fountain .ftx .pdf .md .html
 
-# FOUNTAIN toolchain: .fountain.tpx.ftx.pdf
+# FOUNTAIN toolchain: .fountain.ftx.pdf
 
-# textplay XML from fountain
-.fountain.tpx:
-	$(TEXTPLAY) -x < $< > $@
-
-# fountainhead XML (with structure, etc.)
-.tpx.ftx:
-	$(XSLTPROC) -o $@ $(FOUNTAINHEADDIR)/tpx2ftx.xslt $<
+# XML from fountain
+.fountain.ftx:
+	$(PYTHON) $(FOUNTAINHEADDIR)/fountatinhead.py $< > $@
 	$(XMLLINT) --noout --dtdvalid $(FOUNTAINHEADDIR)/ftx.dtd $@
 
 # FTX+CSS can render directly in browsers and to PDF, without HTML

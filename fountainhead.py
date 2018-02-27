@@ -263,6 +263,7 @@ def push_section_heading(parent, level, text):
 
 def structure_dialogue(doc):
     for ch in doc.getElementsByTagName(CHARACTER):
+        subElement(ch, "name").appendChild(ch.firstChild)
         # move extensions inside character
         n=ch.nextSibling
         while n and (n.nodeType!=n.ELEMENT_NODE or n.nodeName=="extension"):
@@ -328,7 +329,7 @@ def parse_inlines(doc):
     for tag in (TITLE_VALUE, ACTION, DIALOGUE):
         for e in doc.getElementsByTagName(tag):
             text=e.removeChild(e.firstChild).nodeValue
-            for n, l in enumerate(text.split("\n")):
+            for n, l in enumerate(text.strip().split("\n")):
                 if n:
                     appendText(e, "\n")
                 mds=m.convert(l)
