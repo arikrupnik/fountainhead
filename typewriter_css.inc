@@ -1,13 +1,15 @@
-<!-- Minimalist CSS to render markdown in typewriter-sytle consistent
+<!-- Minimalist CSS to render markdown in typewriter sytle consistent
      with common screenplay formatting. This file includes CSS rules
-     as well as the <style> tag; the usecase is passing it as a
+     as well as the <style> tag; the use case is passing it as an
      "--include-in-header" option to pandoc, which needs the HTML
      envelope. -->
 <style type="text/css">
 * { font-family: monospace; font-size: 12pt; }
 body { width: 7in; }
 em { text-decoration: underline; font-style: inherit; }
-h1 { text-decoration: underline; }
+ol, ul { padding-left: 1em; }
+h1, h2 { text-align: center; text-decoration: underline; }
+h2 { font-weight: normal; }
 *+h1 { margin-top: 18pt; }
 
 @media print {
