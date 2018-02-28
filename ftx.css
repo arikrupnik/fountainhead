@@ -1,90 +1,140 @@
 /* ftx.css: stylesheet to display Fountain XML in a borwser or
    transform into PDF */
 
+/* The big stuff: everything is block, except what isn't. */
 * {
+    display: block;
     font-family: courier, monospace;
     font-size: 12pt;
-    display: block;
 }
-
-front-matter, note {
+/* Non-Printing Elucidation. */
+synopsis, note {
     display: none;
 }
-
-center, b, u, i {
-    /* inline formatting elements */
+/* Inline formatting and character name, extensions. */
+b, u, i, character > * {
     display: inline;
 }
 
-@page {
-    size: Letter;
-    margin-top: 1in;
-    margin-left: 1.5in;
+/* Layout Plan. */
+fountain {
+    width: 6in;
 }
-
+@media print {
+    @page {
+        size: Letter;
+        margin-top: 1in;
+        margin-left: 1.5in;
+    }
+    title-page, page-break {
+        page-break-after: always;
+    }
+}
 @media screen {
     fountain {
         margin-top: 1em;
         margin-left: 1em;
     }
+    title-page, page-break {
+        border-bottom: solid thin;
+        margin-bottom: 1em;
+    }
 }
 
-fountain {
-    width: 6in;
-}
-
-sceneheading, action, dialogue, transition {
+/* Block Spacing and Formatting. */
+scene-heading, action, transition, dialogue, dual-dialogue {
     margin-bottom: 1em;
 }
-
-sceneheading {
+scene-heading {
     page-break-after: avoid;
 }
-
-character {
-    margin-left: 2in;
-    page-break-after: avoid;
-}
-character[extension]::after {
-    content: " (" attr(extension) ")";
-}
-
-talk {
-    margin-left: 1in;
-    width: 3.5in;
-}
-
-paren {
-    margin-left: 1.5in;
-    /*width: 2.5in;*/
-    page-break-before: avoid;
-    page-break-after: avoid;
-}
-
 transition {
     /*margin-left: 4in;*/
     text-align: right;
 }
 
-transition:first-of-type {
-    /* first FADE IN: goes on the left */
-    /*margin-left: auto;*/
-    text-align: inherit;
+/* Dialogue */
+dialogue {
+    margin-left: 1in;
+}
+character {
+    margin-left: 1in;
+    page-break-after: avoid;
+}
+character > extension:first-child {
+    padding-left: 1em;
+}
+dialogue > line {
+    width: 3.5in;
+}
+parenthetical {
+    margin-left: .5in;
+    /*width: 2.5in;*/
+    page-break-before: avoid;
+    page-break-after: avoid;
 }
 
-page-break {
-    page-break-after: always;
+/* Dual Dialogue */
+dual-dialogue {
+    display:table;
+}
+dual-dialogue > dialogue {
+    display:table-cell;
+    padding-left: .25in;
+    width: 2.5in;
+}
+dual-dialogue > dialogue > line {
+    width: 2.75in;
 }
 
+/* Formatting */
+action, dialogue {
+    /* "Fountain takes every carriage return as intent." */
+    white-space: pre-line;
+}
 b {
     font-weight: bold;
 }
-
 u {
     text-decoration: underline;
 }
-
 i {
     font-style: italic;
 }
+center {
+    text-align: center;
+}
 
+/* Title Page (vertical spacing can use some work here) */
+title-page {
+    padding-bottom: 1em;
+}
+/* "If you add unsupported key values to your document, they will be
+   ignored, but you may find them useful as metadata." */
+title-page > key[name] {
+    display: none;
+}
+/* "The recommendation is that Title, Credit, Author (or Authors,
+   either is a valid key syntax), and Source will be centered on the
+   page in formatted output. Contact and Draft date would be placed at
+   the lower left." */
+title-page > key[name="Title"],
+title-page > key[name="Credit"],
+title-page > key[name="Author"],
+title-page > key[name="Authors"],
+title-page > key[name="Source"] {
+    display: block;
+    text-align: center;
+}
+title-page > key[name="Contact"],
+title-page > key[name="Draft date"],
+/* Sic in Big Fish. */
+title-page > key[name="Copyright"] {
+    display: block;
+    text-align: left;
+}
+/* Sic in Big Fish. */
+title-page > key[name="Notes"] {
+    display: block;
+    text-align: right;
+}

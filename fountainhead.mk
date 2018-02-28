@@ -10,11 +10,8 @@
 
 # DEPENDENCIES
 
-# https://github.com/olivertaylor/Textplay (fountainhead includes this
-# as a submodule)
-TEXTPLAY=$(FOUNTAINHEADDIR)/Textplay/textplay
-# http://xmlsoft.org/XSLT/xsltproc2.html
-XSLTPROC=xsltproc
+PYTHON=python
+# https://pypi.python.org/pypi/Markdown
 # http://xmlsoft.org/xmllint.html
 XMLLINT=xmllint
 # http://pandoc.org/
@@ -33,17 +30,13 @@ DICT_FILE=./aspell.en.pws
 # non-zero status in case aspell(1) finds non-dictionary words in text
 SPELL_STATUS='{print "not in dictionary:", $$0} END {if (NR) exit 1}'
 
-.SUFFIXES: .fountain .tpx .ftx .pdf .md .html
+.SUFFIXES: .fountain .ftx .pdf .md .html
 
-# FOUNTAIN toolchain: .fountain.tpx.ftx.pdf
+# FOUNTAIN toolchain: .fountain.ftx.pdf
 
-# textplay XML from fountain
-.fountain.tpx:
-	$(TEXTPLAY) -x < $< > $@
-
-# fountainhead XML (with structure, etc.)
-.tpx.ftx:
-	$(XSLTPROC) -o $@ $(FOUNTAINHEADDIR)/tpx2ftx.xslt $<
+# XML from fountain
+.fountain.ftx:
+	$(PYTHON) $(FOUNTAINHEADDIR)/fountatinhead.py $< > $@
 	$(XMLLINT) --noout --dtdvalid $(FOUNTAINHEADDIR)/ftx.dtd $@
 
 # FTX+CSS can render directly in browsers and to PDF, without HTML

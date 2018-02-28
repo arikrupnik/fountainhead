@@ -1,0 +1,49 @@
+= character lines with extensions, dual dialogue
+
+.regular dialogue
+
+CHARACTER
+Line
+
+
+.dual dialogue
+
+CHARACTER
+Chorus Line
+
+ANOTHER CHARACTER ^
+Chorus Line
+
+
+.extension
+
+CHARACTER (O.S.)
+You can't see me
+
+
+.extension and dual
+
+CHARACTER (O.S.)
+I'm the visible echo
+
+ANOTHER CHARACTER (O.S.)^
+I'm the invisible echo
+
+.using lower case forces line to ACTION
+
+CHARACTER (o.s.)
+You can't see me
+
+
+.multiple extensions
+
+CHARACTER (O.S.)(WRYLY)
+You can't see me, and I'm wry
+
+
+.multiple extensions, different witespace
+
+CHARACTER (O.S.) (WRYLY)
+You can't see me, and I'm
+(beat)
+wry
