@@ -27,19 +27,22 @@ SYNOPSIS = "synopsis"
 PAGE_BREAK = "page-break"
 
 
-def parse_fountain(lines, flat_output):
+def parse_fountain(lines, args):
     doc=xml.dom.minidom.getDOMImplementation().createDocument(None, "fountain", None)
+    if args.css:
+        doc.insertBefore(doc.createProcessingInstruction("xml-stylesheet", "href='%s'" % args.css),
+                         doc.documentElement)
     lines=map(lambda l: unicode(l.rstrip("\r\n"), "utf-8"), lines)
     title, body = split_title_body(lines)
     parse_title(title, doc.documentElement)
     body, notes = parse_comments_notes(body)
     pbody=parse_body(body, doc.documentElement)
-    if flat_output:
+    if args.flat_output:
         return doc
     structure_dialogue(doc)
     structure_scenes(doc)
     structure_sections(doc)
-    parse_inlines(doc)
+    parse_inlines(doc, args.semantic_linebreaks)
     reconstitute_notes(doc, notes)
     return doc
 
@@ -94,10 +97,11 @@ def parse_comments_notes(lines):
     text=re.sub(r"(/\*.*?\*/)", "", text, flags=re.DOTALL)
     out_text=""
     notes=[]
-    for token in re.split(r"(\[\[.*?\]\])", text, flags=re.DOTALL):
-        if token.startswith("[[") and token.endswith("]]"):
+    # "The empty lines around the Note on its own line would be removed in parsing."
+    for token in re.split(r"\n?(\[\[.*?\]\]\n?)", text, flags=re.DOTALL):
+        if re.match(r"\n?\[\[", token) and re.search(r"\]\]\n?$", token):
             out_text+="[["+str(len(notes))+"]]"
-            notes+=[token.lstrip("[[").rstrip("]]")]
+            notes+=[token.strip().lstrip("[[").rstrip("]]")]
         else:
             out_text+=token
     return out_text.split("\n"), notes
@@ -310,7 +314,8 @@ def structure_sections(doc):
         for sh in doc.getElementsByTagName(SECTION_HEADING):
             if int(sh.getAttribute("level"))==level:
                 s=doc.createElement("section")
-                s.setAttribute("heading", sh.parentNode.replaceChild(s, sh).firstChild.nodeValue)
+                s.setAttribute("heading",
+                               sh.parentNode.replaceChild(s, sh).firstChild.nodeValue)
                 id=sh.getAttribute("id")
                 if id:
                     s.setAttribute("id", id)
@@ -323,12 +328,14 @@ def structure_sections(doc):
 
 # Inline Formatting and Mixed Content
 
-def parse_inlines(doc):
+def parse_inlines(doc, semantic_linebreaks):
     # assuming these have text-only content at this point
     m=markdown.Markdown(extensions=[FountainInlines()])
     for tag in (TITLE_VALUE, ACTION, DIALOGUE):
         for e in doc.getElementsByTagName(tag):
             text=e.removeChild(e.firstChild).nodeValue
+            if semantic_linebreaks:
+                text=re.sub(r"([^\n])\n([^\n])", r"\1 \2", text)
             for n, l in enumerate(text.strip().split("\n")):
                 if n:
                     appendText(e, "\n")
@@ -380,13 +387,12 @@ class FountainInlines(markdown.extensions.Extension):
         md.inlinePatterns["u"]      = ip.SimpleTagPattern(r'(_)(.+?)\2', 'u')
         
         # not strictly speaking formatting, but these are inline
-        md.inlinePatterns["note"]   = ip.SimpleTagPattern(r'(\n?\[\[)(.+?)(\]\]\n?)', 'note')
+        md.inlinePatterns["note"]   = ip.SimpleTagPattern(r'(\[\[)(.+?)(\]\])', 'note')
 
 
 def reconstitute_notes(doc, notes):
     for n in doc.getElementsByTagName("note"):
         appendText(n, notes[int(n.removeChild(n.firstChild).nodeValue)])
-    # TODO: "The empty lines around the Note on its own line would be removed in parsing."
 
 # DOM utilities
 
@@ -410,14 +416,20 @@ def subElementWithText(e, tagName, text):
 
 def main(argv):
     ap=argparse.ArgumentParser(description="Convert Fountain input to XML.")
-    ap.add_argument("-f", "--flatoutput",
+    ap.add_argument("-s", "--semantic-linebreaks",
+                    action="store_true",
+                    help="treat single line breaks as space characters")
+    ap.add_argument("-c", "--css",
+                    metavar="uri",
+                    help="use this CSS stylesheet")
+    ap.add_argument("-f", "--flat-output",
                     action="store_true",
                     help="output flat XML without hierarchical structure")
     ap.add_argument("infile", metavar="file.fountain", nargs="?",
                     type=argparse.FileType("r"),
                     default=sys.stdin)
     args=ap.parse_args()
-    print codecs.encode(parse_fountain(args.infile, args.flatoutput).toxml(), "utf-8")
+    print codecs.encode(parse_fountain(args.infile, args).toxml(), "utf-8")
 
 if __name__ == "__main__":
     main(sys.argv)

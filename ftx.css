@@ -3,9 +3,9 @@
 
 /* The big stuff: everything is block, except what isn't. */
 * {
+    display: block;
     font-family: courier, monospace;
     font-size: 12pt;
-    display: block;
 }
 /* Non-Printing Elucidation. */
 synopsis, note {
@@ -48,11 +48,6 @@ scene-heading, action, transition, dialogue, dual-dialogue {
 scene-heading {
     page-break-after: avoid;
 }
-/* "Fountain takes every carriage return as intent." (only in Action
-   lines -ak) */
-action {
-    white-space: pre-line;
-}
 transition {
     /*margin-left: 4in;*/
     text-align: right;
@@ -93,6 +88,10 @@ dual-dialogue > dialogue > line {
 }
 
 /* Formatting */
+action, dialogue {
+    /* "Fountain takes every carriage return as intent." */
+    white-space: pre-line;
+}
 b {
     font-weight: bold;
 }
