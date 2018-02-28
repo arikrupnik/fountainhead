@@ -3,7 +3,6 @@ Tools for using Fountain.io screenplays throughout production process
 
 ## fountainhead.py: converts .fountain files to XML
 Fully implements the [Fountatin spec](https://fountain.io/syntax).
-Requires [Python Markdown](https://pypi.python.org/pypi/Markdown) (`pip install markdown`).
 Outputs semantic XML that corresponds to implicit structure in .fountain documents.
 
 Input:
