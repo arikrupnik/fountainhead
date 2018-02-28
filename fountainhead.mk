@@ -11,8 +11,7 @@
 # DEPENDENCIES
 
 PYTHON=python
-# http://xmlsoft.org/XSLT/xsltproc2.html
-XSLTPROC=xsltproc
+# https://pypi.python.org/pypi/Markdown
 # http://xmlsoft.org/xmllint.html
 XMLLINT=xmllint
 # http://pandoc.org/
