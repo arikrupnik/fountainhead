@@ -117,7 +117,7 @@ title-page > key[name] {
 /* "The recommendation is that Title, Credit, Author (or Authors,
    either is a valid key syntax), and Source will be centered on the
    page in formatted output. Contact and Draft date would be placed at
-   the lower left." */
+   the lower left." Big Fish adds Copyright to the latter list */
 title-page > key[name="Title"],
 title-page > key[name="Credit"],
 title-page > key[name="Author"],
@@ -128,7 +128,6 @@ title-page > key[name="Source"] {
 }
 title-page > key[name="Contact"],
 title-page > key[name="Draft date"],
-/* Sic in Big Fish. */
 title-page > key[name="Copyright"] {
     display: block;
     text-align: left;

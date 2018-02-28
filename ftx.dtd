@@ -39,7 +39,7 @@
 <!ELEMENT scene-heading (#PCDATA)>
 
 <!ELEMENT dialogue (character, (line|parenthetical)+)>
-<!ELEMENT character (name|extension*)>
+<!ELEMENT character (name, extension*)>
 <!ELEMENT name (#PCDATA)>
 <!ELEMENT extension (#PCDATA)>
 <!ELEMENT line (%formatting;|note|center|lyric)*>

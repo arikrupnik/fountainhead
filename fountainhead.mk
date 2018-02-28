@@ -36,7 +36,7 @@ SPELL_STATUS='{print "not in dictionary:", $$0} END {if (NR) exit 1}'
 
 # XML from fountain
 .fountain.ftx:
-	$(PYTHON) $(FOUNTAINHEADDIR)/fountatinhead.py $< > $@
+	$(PYTHON) $(FOUNTAINHEADDIR)/fountainhead.py -s -c $(FOUNTAINHEADDIR)/ftx.css $< > $@
 	$(XMLLINT) --noout --dtdvalid $(FOUNTAINHEADDIR)/ftx.dtd $@
 
 # FTX+CSS can render directly in browsers and to PDF, without HTML
