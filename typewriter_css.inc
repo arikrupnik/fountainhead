@@ -8,6 +8,7 @@
 body { width: 7in; }
 em { text-decoration: underline; font-style: inherit; }
 ol, ul { padding-left: 1em; }
+h1 { text-transform: uppercase; }
 h1, h2 { text-align: center; text-decoration: underline; }
 h2 { font-weight: normal; }
 *+h1 { margin-top: 18pt; }

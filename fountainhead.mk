@@ -12,6 +12,8 @@
 
 PYTHON=python
 # https://pypi.python.org/pypi/Markdown
+# http://xmlsoft.org/XSLT/xsltproc2.html
+XSLTPROC=xsltproc
 # http://xmlsoft.org/xmllint.html
 XMLLINT=xmllint
 # http://pandoc.org/
@@ -27,7 +29,7 @@ GREP=grep
 # refinement in case of recursive make(1) invocations)
 DICT_FILE=./aspell.en.pws
 
-.SUFFIXES: .fountain .ftx .pdf .md .html
+.SUFFIXES: .fountain .ftx .pdf .md .html .plot-summary
 
 # FOUNTAIN toolchain: .fountain.ftx.pdf
 
@@ -57,3 +59,9 @@ DICT_FILE=./aspell.en.pws
 # weasyprint PDF from HTML
 .html.pdf:
 	$(WEASYPRINT) $< $@
+
+# additional artifacts from .fountain
+
+# markdown plot summary
+.ftx.plot-summary:
+	$(XSLTPROC) -o $@ $(FOUNTAINHEADDIR)/plot-summary.xslt $<
