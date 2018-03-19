@@ -1,0 +1,39 @@
+= synopsis1
+[[note0]]
+= synopsis2
+
+
+preserve line breaks
+[[note on its own line]]
+between lines with interceding notes
+
+
+remove line breaks before <note> on its own line
+
+[[note2]]
+[[note3]]
+
+leave one line break before continuing text
+
+
+remove empty lines between <note>s on their own lines
+
+[[note4]]
+
+[[note5]]
+
+leave a line break before continuing text
+
+
+collapse any number of line breaks before <note>
+
+
+[[note6]]
+
+leave a line break before continuing text
+
+
+
+[[note not on a line by itself
+
+]]text immediately follows <note>

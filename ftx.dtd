@@ -16,9 +16,9 @@
      authoring. FTX prefers unambiguous element names to short
      ones. -->
 
-<!ENTITY % formatting "#PCDATA|b|u|i">
+<!ENTITY % formatting "#PCDATA|b|u|i|note|lyric">
 
-<!ENTITY % scene "action|dialogue|dual-dialogue|synopsis|note">
+<!ENTITY % scene "action|dialogue|dual-dialogue|synopsis">
 <!ENTITY % block "%scene;|scene|transition|section">
 
 <!ELEMENT fountain (title-page?, (%block;|page-break)*)>
@@ -30,7 +30,7 @@
 <!ELEMENT value (%formatting;)*>
 
 <!-- semantic structure -->
-<!ELEMENT action (%formatting;|note|center|lyric)*>
+<!ELEMENT action (%formatting;|center)*>
 
 <!ELEMENT scene (scene-heading, (%scene;)*)>
 <!-- "Scene numbers are any alphanumerics (plus dashes and periods)"
@@ -42,7 +42,7 @@
 <!ELEMENT character (name, extension*)>
 <!ELEMENT name (#PCDATA)>
 <!ELEMENT extension (#PCDATA)>
-<!ELEMENT line (%formatting;|note|center|lyric)*>
+<!ELEMENT line (%formatting;)*>
 <!ELEMENT parenthetical (#PCDATA)>
 <!ELEMENT dual-dialogue (dialogue, dialogue)>
 

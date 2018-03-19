@@ -97,11 +97,10 @@ def parse_comments_notes(lines):
     text=re.sub(r"(/\*.*?\*/)", "", text, flags=re.DOTALL)
     out_text=""
     notes=[]
-    # "The empty lines around the Note on its own line would be removed in parsing."
-    for token in re.split(r"\n?(\[\[.*?\]\]\n?)", text, flags=re.DOTALL):
-        if re.match(r"\n?\[\[", token) and re.search(r"\]\]\n?$", token):
+    for token in re.split(r"(\[\[.*?\]\])", text, flags=re.DOTALL):
+        if token.startswith("[[") and token.endswith("]]"):
             out_text+="[["+str(len(notes))+"]]"
-            notes+=[token.strip().lstrip("[[").rstrip("]]")]
+            notes+=[token[2:-2]]
         else:
             out_text+=token
     return out_text.split("\n"), notes
@@ -335,6 +334,8 @@ def parse_inlines(doc, semantic_linebreaks):
         for e in doc.getElementsByTagName(tag):
             text=e.removeChild(e.firstChild).nodeValue
             if semantic_linebreaks:
+                # consolidate adjacent lines; leave as is if blank
+                # lines intervene
                 text=re.sub(r"([^\n])\n([^\n])", r"\1 \2", text)
             for n, l in enumerate(text.strip().split("\n")):
                 if n:
@@ -350,7 +351,7 @@ def parse_inlines(doc, semantic_linebreaks):
 """Markdown extension that captures Fountain inline emphasis rules.
 Fountain recognizes only underline, italic and bold inlines, and these
 it calls out as such rather than generic "emphasis." This extension
-removes all built-in Markdown patterms and installs Fountain-specific
+removes all built-in Markdown patterns and installs Fountain-specific
 ones."""
 class FountainInlines(markdown.extensions.Extension):
     def extendMarkdown(self, md, md_globals):
@@ -393,6 +394,36 @@ class FountainInlines(markdown.extensions.Extension):
 def reconstitute_notes(doc, notes):
     for n in doc.getElementsByTagName("note"):
         appendText(n, notes[int(n.removeChild(n.firstChild).nodeValue)])
+
+    # "The empty lines around the Note on its own line would be removed in parsing."
+    line_notes=[]
+    for n in doc.getElementsByTagName("note"):
+        n.parentNode.normalize()
+        ps=n.previousSibling
+        ns=n.nextSibling
+        if ps and ns:
+            if ps.nodeType==n.TEXT_NODE and ns.nodeType==n.TEXT_NODE:
+                if ps.nodeValue.endswith("\n") and ns.nodeValue.startswith("\n"):
+                    line_notes+=[n]
+    for n in line_notes:
+        # remove all linefeeds before
+        ps=n.previousSibling
+        if ps and ps.nodeType==n.TEXT_NODE and ps.nodeValue.endswith("\n"):
+            ptext=ps.nodeValue.rstrip("\n")
+            if ptext:
+                n.parentNode.replaceChild(
+                    doc.createTextNode(ptext),
+                    ps)
+            else:
+                n.parentNode.removeChild(ps)
+        ns=n.nextSibling
+        if ns and ns.nodeType==n.TEXT_NODE and ns.nodeValue.startswith("\n"):
+            # leave one linefeed after, (if next element is also a
+            # <note>, it removes this linefeed in its turn)
+            n.parentNode.replaceChild(
+                doc.createTextNode("\n"+ns.nodeValue.lstrip("\n")),
+                ns)
+
 
 # DOM utilities
 
