@@ -29,22 +29,27 @@ GREP=grep
 # refinement in case of recursive make(1) invocations)
 DICT_FILE=./aspell.en.pws
 
-.SUFFIXES: .fountain .ftx .pdf .md .html .plot-summary
+.SUFFIXES: .fountain .d .ftx .pdf .md .html .plot-summary
 
 # FOUNTAIN toolchain: .fountain.ftx.pdf
 
 # XML from fountain
-.fountain.ftx:
-	$(PYTHON) $(FOUNTAINHEADDIR)/fountainhead.py -s -c $(FOUNTAINHEADDIR)/ftx.css $< > $@
-	$(XMLLINT) --noout --dtdvalid $(FOUNTAINHEADDIR)/ftx.dtd $@
+%.ftx : %.fountain %.d
+	$(PYTHON) $(FOUNTAINHEADDIR)/fountainhead.py -M $< > $*.d
+	$(PYTHON) $(FOUNTAINHEADDIR)/fountainhead.py -sx -c $(FOUNTAINHEADDIR)/ftx.css $< > $@_
+	$(XMLLINT) --noout --dtdvalid $(FOUNTAINHEADDIR)/ftx.dtd $@_
+	$(ASPELL) list -H -p $(DICT_FILE) < $@_ > $@_nondict
+	if [ -s $@_nondict ]; then $(GREP) -nwFf $@_nondict --color=auto $< `sed 's/^.*://' $*.d`; rm $@_nondict; exit 1; fi
+	rm $@_nondict; mv $@_ $@
+# http://make.mad-scientist.net/papers/advanced-auto-dependency-generation/
+# doesn't quite work: mising .d fails to force rebuild
+%.d : ;
+.PRECIOUS: %.d
+include $(wildcard *.d)
 
 # FTX+CSS can render directly in browsers and to PDF, without HTML
 # intermediary
 .ftx.pdf:
-# <note> is where clip information lives now; if this changes, --add-html-skip=note needs to change as well
-# this rule spell-checks the XML so it can skip over some elements, but greps the .fountain to show errors at the source
-	$(ASPELL) list -H --add-html-skip=note -p $(DICT_FILE) < $< | $(GREP) -nFf - --color=auto $*.fountain; \
-		[ $$? -eq 1 ]
 	$(WEASYPRINT) -s $(FOUNTAINHEADDIR)/ftx.css $< $@
 
 
@@ -52,7 +57,7 @@ DICT_FILE=./aspell.en.pws
 
 # markdown renders through HTML intermediary (with TW-style CSS)
 .md.html:
-	$(ASPELL) list -p $(DICT_FILE) < $< | $(GREP) -nFf - --color=auto $<; \
+	$(ASPELL) list -p $(DICT_FILE) < $< | $(GREP) -nwFf - --color=auto $<; \
 		[ $$? -eq 1 ]
 	$(PANDOC) -H $(FOUNTAINHEADDIR)/typewriter_css.inc -o $@ $<
 

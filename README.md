@@ -1,4 +1,4 @@
-# fountainhead
+# Fountainhead
 Tools for using Fountain.io screenplays throughout production process
 
 ## `fountainhead.py`: converts .fountain files to XML
@@ -43,6 +43,31 @@ Output:
     </fountain>
 
 The output can display directly in browsers with the use of included CSS stylesheet, or further convert to PDF using [Weasyprint](http://weasyprint.org) and the included makefile.
+
+## Syntax extensions
+
+### Section identifiers
+
+Fountainhead parses identifiers out of section headings in addition to scene headings.
+`#ACT II #ii#` becomes `<section heading="Act II" id="ii">`
+
+At user option (`-x` or `--syntax-extensions` switch), Fountainhead interprets additional syntax outside the scope of the Fountain spec.
+
+### `=<include.fountain`
+Fountainhead parses the file named `include.fountain` and inserts its parse tree in place of this directive.
+This feature allows breaking a screenplay into smaller files that are easier to edit individually.
+Changing the order of scenes, for example, means moving one line instead of hundreds at a time.
+
+Fountainhead parses the include first, rather than including its source directly. This keeps includes from messing up the structure of the including file. Any scene or section that starts in a file ends in the same file.
+
+If the filename includes a fragment identifier (e.g., `file.fountain#scene_id`), Fountainhead includes only the scene or section with that identifier.
+A common use case for this feature is keeping "mirror" scenes together for editing.
+For example, two characters may have a confrontation at the beginning of a screenplay and the end; the differences between these interactions show character development.
+It's easy to keep the mirror images consistent if they reside in the same file.
+
+### Semantic linebreaks
+
+By default, Fountainhead follows the [Fountain spec](https://fountain.io/syntax#section-br): "Unlike some markup languages, Fountain takes every carriage return as intent." At user option (`-s` or `--semantic-linebreaks` switch), Fountainhead collapses single linefeeds into spaces. <http://rhodesmill.org/brandon/2012/one-sentence-per-line>
 
 ## `plot-summary.xslt`: extracts plot summary from a Fountain screenplay
 

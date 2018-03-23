@@ -7,6 +7,7 @@ import xml.dom.minidom
 import markdown
 import markdown.inlinepatterns as ip
 import argparse
+import os.path
 
 # fountain source element types
 TITLE_PAGE = "title-page"
@@ -26,6 +27,8 @@ SECTION_HEADING = "section-heading"
 SYNOPSIS = "synopsis"
 PAGE_BREAK = "page-break"
 
+INCLUDE = "include"
+
 
 def parse_fountain(lines, args):
     doc=xml.dom.minidom.getDOMImplementation().createDocument(None, "fountain", None)
@@ -36,7 +39,7 @@ def parse_fountain(lines, args):
     title, body = split_title_body(lines)
     parse_title(title, doc.documentElement)
     body, notes = parse_comments_notes(body)
-    pbody=parse_body(body, doc.documentElement)
+    pbody=parse_body(body, doc.documentElement, args.syntax_extensions)
     if args.flat_output:
         return doc
     structure_dialogue(doc)
@@ -44,6 +47,8 @@ def parse_fountain(lines, args):
     structure_sections(doc)
     parse_inlines(doc, args.semantic_linebreaks)
     reconstitute_notes(doc, notes)
+    if args.syntax_extensions:
+        process_includes(doc, args)
     return doc
 
 def split_title_body(lines):
@@ -107,7 +112,7 @@ def parse_comments_notes(lines):
 
 # Parsing lines of text into text-only elements
 
-def parse_body(lines, fountain):
+def parse_body(lines, fountain, syntax_extensions):
     # this loop is a little awkward; it must accommodate fountain
     # requirements for lookback and lookahead ("A Scene Heading is any
     # line that has a blank line following it")
@@ -115,11 +120,11 @@ def parse_body(lines, fountain):
         return
     line = lines[0]
     for nextline in lines[1:]:
-        parse_line(line, fountain, nextline)
+        parse_line(line, fountain, nextline, syntax_extensions)
         line=nextline
-    parse_line(line, fountain, None)
+    parse_line(line, fountain, None, syntax_extensions)
 
-def parse_line(line, fountain, nextline):
+def parse_line(line, fountain, nextline, syntax_extensions):
     sline = line.strip()
     
     # first, I consider forcing elements
@@ -148,6 +153,11 @@ def parse_line(line, fountain, nextline):
     # page breaks may look like synopses, so I process them first
     if re.match(r"^===+$", sline):
         return push_element(fountain, PAGE_BREAK, "")
+    # FountainHead extensions piggyback on synopsis
+    if syntax_extensions:
+        if sline.startswith("=<"):
+            return push_element(fountain, INCLUDE, sline[2:])
+    # regular synopsis
     if sline.startswith("="):
         return push_element(fountain, SYNOPSIS, sline[1:].lstrip())
 
@@ -392,12 +402,12 @@ class FountainInlines(markdown.extensions.Extension):
 
 
 def reconstitute_notes(doc, notes):
-    for n in doc.getElementsByTagName("note"):
+    for n in doc.getElementsByTagName(NOTE):
         appendText(n, notes[int(n.removeChild(n.firstChild).nodeValue)])
 
     # "The empty lines around the Note on its own line would be removed in parsing."
     line_notes=[]
-    for n in doc.getElementsByTagName("note"):
+    for n in doc.getElementsByTagName(NOTE):
         n.parentNode.normalize()
         ps=n.previousSibling
         ns=n.nextSibling
@@ -424,6 +434,36 @@ def reconstitute_notes(doc, notes):
                 doc.createTextNode("\n"+ns.nodeValue.lstrip("\n")),
                 ns)
 
+def filename_fragment(filename, infilename):
+    tokens=filename.rsplit("#", 1)
+    name=tokens[0]
+    if os.path.exists(infilename):
+        name=os.path.join(os.path.dirname(infilename), name)
+    fragment=len(tokens)==2 and tokens[1] or None
+    return name, fragment
+
+def process_includes(doc, args):
+    for i in doc.getElementsByTagName(INCLUDE):
+        filename, fragment_id=filename_fragment(i.firstChild.nodeValue, args.infile.name)
+        try:
+            f=open(filename)
+        except IOError as e:
+            # "Fountain does its best to sensibly interpret the text file
+            # into screenplay formatting. When in doubt, Fountain returns
+            # text as Action."
+            a=doc.createElement(ACTION)
+            a.appendChild(doc.createTextNode(filename + ": " + e.strerror))
+            i.parentNode.replaceChild(a, i)
+            return
+        child_doc=parse_fountain(f, args)
+        fragment=fragment_id and findElementByAttributeValue(child_doc, "id", fragment_id)
+        if fragment:
+            i.parentNode.replaceChild(fragment, i)
+        else:
+            for e in child_doc.documentElement.childNodes:
+                if e.nodeName!=TITLE_PAGE:
+                    i.parentNode.insertBefore(e, i)
+            i.parentNode.removeChild(i)
 
 # DOM utilities
 
@@ -445,6 +485,37 @@ def subElementWithText(e, tagName, text):
     appendText(e, text)
     return e
 
+def findElementByAttributeValue(n, attr, value):
+    for e in n.getElementsByTagName("*"):
+        if e.getAttributeNode(attr) and e.getAttribute(attr)==value:
+            return e
+
+
+# Dependencies
+
+def find_dependencies(infile):
+    deps=[]
+    for l in infile:
+        # consider abstracting .rstrip("\r\n"), etc. into a function
+        # that both find_dependencies and parse_fountain can use
+        if l.startswith("=<"):
+            f,_=filename_fragment(l[2:].rstrip("\r\n"), infile.name)
+            deps.append(f)
+            try:
+                i=open(f)
+                deps.extend(find_dependencies(i))
+            except IOError:
+                pass
+    return deps
+
+def make_rule(args):
+    target_filename=os.path.splitext(args.infile.name)[0]+".ftx"
+    deps=find_dependencies(args.infile)
+    if deps:
+        return target_filename + ": " + " ".join(deps)
+    else:
+        return ""
+
 def main(argv):
     ap=argparse.ArgumentParser(description="Convert Fountain input to XML.")
     ap.add_argument("-s", "--semantic-linebreaks",
@@ -456,11 +527,21 @@ def main(argv):
     ap.add_argument("-f", "--flat-output",
                     action="store_true",
                     help="output flat XML without hierarchical structure")
+    ap.add_argument("-x", "--syntax-extensions",
+                    action="store_true",
+                    help="interpert =<include.fountain fountainhead extexsion")
+    ap.add_argument("-M", "--dependencies",
+                    action="store_true",
+                    help="output a make(1) rule describing the dependencies for this file")
     ap.add_argument("infile", metavar="file.fountain", nargs="?",
                     type=argparse.FileType("r"),
                     default=sys.stdin)
     args=ap.parse_args()
-    print codecs.encode(parse_fountain(args.infile, args).toxml(), "utf-8")
+
+    if args.dependencies:
+        print make_rule(args)
+    else:
+        print codecs.encode(parse_fountain(args.infile, args).toxml(), "utf-8")
 
 if __name__ == "__main__":
     main(sys.argv)
