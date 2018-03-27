@@ -137,3 +137,10 @@ title-page > key[name="Notes"] {
     display: block;
     text-align: right;
 }
+
+/* FTX extension. */
+title-page > key[name="Project Home"] {
+    display: block;
+    text-align: center;
+    text-decoration: underline;
+}

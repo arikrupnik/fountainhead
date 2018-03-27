@@ -14,6 +14,11 @@
       <xsl:value-of select="value"/>
       <xsl:text>&#xa;&#xa;</xsl:text>
     </xsl:for-each>
+    <xsl:for-each select="title-page/key[@name='Project Home']">
+      <xsl:text>## &lt;</xsl:text>
+      <xsl:value-of select="value"/>
+      <xsl:text>&gt;&#xa;&#xa;</xsl:text>
+    </xsl:for-each>
     <xsl:text># Plot Summary</xsl:text>
     <xsl:apply-templates/>
     <xsl:text>&#xa;&#xa;</xsl:text>
@@ -36,6 +41,7 @@
       <xsl:with-param name="indent" select="'#'"/>
       <xsl:with-param name="count" select="count(ancestor-or-self::section)+1"/>
     </xsl:call-template>
+    <xsl:text> </xsl:text>
     <xsl:value-of select="@heading"/>
     <xsl:text>&#xa;&#xa;</xsl:text>
     <xsl:apply-templates/>
