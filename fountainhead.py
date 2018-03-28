@@ -37,7 +37,7 @@ def parse_fountain(lines, args):
                          doc.documentElement)
     lines=map(lambda l: unicode(l.rstrip("\r\n"), "utf-8"), lines)
     title, body = split_title_body(lines)
-    parse_title(title, doc.documentElement)
+    parse_title(title, doc.documentElement, args.meta)
     body, notes = parse_comments_notes(body)
     pbody=parse_body(body, doc.documentElement, args.syntax_extensions)
     if args.flat_output:
@@ -76,11 +76,12 @@ def discard_leading_empty_lines(lines):
             return lines[n:]
     return []
 
-def parse_title(lines, fountain):
+def parse_title(lines, fountain, extra_keys):
+    if lines or extra_keys:
+        et=subElement(fountain, TITLE_PAGE)
     # "Information is encoding (sic) in the format key: value. Keys
     # can have spaces (e. g. Draft date), but must end with a colon."
     if lines:
-        et=subElement(fountain, TITLE_PAGE)
         for l in lines:
             # "Values can be inline with the key or they can be
             # indented on a newline below the key (as shown with
@@ -96,6 +97,14 @@ def parse_title(lines, fountain):
                     subElementWithText(ek, TITLE_VALUE, value.strip())
             else:
                 subElementWithText(ek, TITLE_VALUE, l.strip())
+    # additional keys can come from command-line arguments
+    if extra_keys:
+        for meta in extra_keys:
+            key, value=meta
+            if key and value:
+                ek=subElement(et, TITLE_KEY)
+                ek.setAttribute("name", key)
+                subElementWithText(ek, TITLE_VALUE, value)
 
 def parse_comments_notes(lines):
     text="\n".join(lines)
@@ -527,6 +536,9 @@ def main(argv):
     ap.add_argument("-f", "--flat-output",
                     action="store_true",
                     help="output flat XML without hierarchical structure")
+    ap.add_argument("-m", "--meta",
+                    action="append", nargs=2, metavar=("key", "value"),
+                    help="add metadata values to title page")
     ap.add_argument("-x", "--syntax-extensions",
                     action="store_true",
                     help="interpert =<include.fountain fountainhead extexsion")

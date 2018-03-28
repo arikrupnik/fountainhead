@@ -4,13 +4,13 @@
      "--include-in-header" option to pandoc, which needs the HTML
      envelope. -->
 <style type="text/css">
-* { font-family: monospace; font-size: 12pt; }
+* { font-family: courier, monospace; font-size: 12pt; }
 body { width: 7in; }
 em { text-decoration: underline; font-style: inherit; }
 ol, ul { padding-left: 1em; }
-h1 { text-transform: uppercase; }
-h1, h2 { text-align: center; text-decoration: underline; }
-h2 { font-weight: normal; }
+h1, h2, h3, h4, h5, h6 { text-align: center; font-weight: normal; }
+h1 { text-transform: uppercase; font-weight: bold; }
+h1, h2 { text-decoration: underline; }
 *+h1 { margin-top: 18pt; }
 
 @media print {

@@ -22,6 +22,7 @@ PANDOC=pandoc
 WEASYPRINT=weasyprint
 ASPELL=aspell
 GREP=grep
+GIT=git
 
 # SPELLCHECK: verifies .fountain and .md files. Projects can add local
 # dictionary terms in $(DICT_FILE). aspell(1) requires that the
@@ -31,16 +32,19 @@ DICT_FILE=./aspell.en.pws
 
 .SUFFIXES: .fountain .d .ftx .pdf .md .html .plot-summary
 
+GIT_VERSION=$(shell $(GIT) describe --tags || $(GIT) rev-parse --short HEAD)
+
 # FOUNTAIN toolchain: .fountain.ftx.pdf
 
 # XML from fountain
 %.ftx : %.fountain %.d
 	$(PYTHON) $(FOUNTAINHEADDIR)/fountainhead.py -M $< > $*.d
-	$(PYTHON) $(FOUNTAINHEADDIR)/fountainhead.py -sx -c $(FOUNTAINHEADDIR)/ftx.css $< > $@_
+	$(PYTHON) $(FOUNTAINHEADDIR)/fountainhead.py -sx -m Version "$(GIT_VERSION)" -c $(FOUNTAINHEADDIR)/ftx.css $< > $@_
 	$(XMLLINT) --noout --dtdvalid $(FOUNTAINHEADDIR)/ftx.dtd $@_
 	$(ASPELL) list -H -p $(DICT_FILE) < $@_ > $@_nondict
 	if [ -s $@_nondict ]; then $(GREP) -nwFf $@_nondict --color=auto $< `sed 's/^.*://' $*.d`; rm $@_nondict; exit 1; fi
-	rm $@_nondict; mv $@_ $@
+	rm $@_nondict
+	mv $@_ $@
 # http://make.mad-scientist.net/papers/advanced-auto-dependency-generation/
 # doesn't quite work: mising .d fails to force rebuild
 %.d : ;
