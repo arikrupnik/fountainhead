@@ -469,9 +469,12 @@ def process_includes(doc, args):
         if fragment:
             i.parentNode.replaceChild(fragment, i)
         else:
-            for e in child_doc.documentElement.childNodes:
+            e = child_doc.documentElement.firstChild
+            while e:
+                e.parentNode.removeChild(e)
                 if e.nodeName!=TITLE_PAGE:
                     i.parentNode.insertBefore(e, i)
+                e = child_doc.documentElement.firstChild
             i.parentNode.removeChild(i)
 
 # DOM utilities
