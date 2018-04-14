@@ -184,7 +184,9 @@ def parse_line(line, fountain, nextline, syntax_extensions):
         if not nextline:
             token = re.split(r"[\. ]", sline+" ")[0].upper()
             if token in ("INT", "EXT", "EST", "INT/EXT", "I/E"):
-                return push_scene_heading(fountain, sline)
+                return push_scene_heading(fountain,
+                                          sline[len(token)+1:].lstrip(),
+                                          setting=sline[:len(token)+1].rstrip())
             if line.upper()==line:
                 # "The requirements for Transition elements are:
                 # Uppercase; Preceded by and followed by an empty
@@ -246,13 +248,28 @@ def push_element(fountain, tag, text):
         e=subElementWithText(fountain, tag, text)
     return e
 
-def push_scene_heading(parent, text):
+def push_scene_heading(parent, text, setting=None):
     tokens=re.split(r"(#.*?#$)", text)
     if len(tokens)==1:
-        e=push_element(parent, SCENE_HEADING, text)
+        id=None
     else:
-        e=push_element(parent, SCENE_HEADING, tokens[0].strip())
-        e.setAttribute("id", tokens[1].strip("#"))
+        text=tokens[0].strip()
+        id=tokens[1].strip("#")
+
+    tokens=text.rsplit("-", 1)
+    if len(tokens)==1:
+        tod=None
+    else:
+        text=tokens[0].rstrip(" -")
+        tod=tokens[1].lstrip(" -")
+
+    e=push_element(parent, SCENE_HEADING, text)
+    if setting:
+        e.setAttribute("setting", setting)
+    if id:
+        e.setAttribute("id", id)
+    if tod:
+        e.setAttribute("tod", tod)
     return e
 
 def push_character(parent, text):
@@ -311,10 +328,28 @@ def structure_scenes(doc):
     for sh in doc.getElementsByTagName(SCENE_HEADING):
         s=doc.createElement("scene")
         s.appendChild(sh.parentNode.replaceChild(s, sh))
+
+        # move @id up to scene
         id=sh.getAttribute("id")
         if id:
             sh.removeAttribute("id")
             s.setAttribute("id", id)
+
+        # move text to <location>
+        subElement(sh, "location").appendChild(sh.firstChild)
+
+        # move @setting and @tod to elements
+        setting=sh.getAttribute("setting")
+        if setting:
+            sh.removeAttribute("setting")
+            se=subElementWithText(sh, "setting", setting)
+            sh.insertBefore(se, sh.firstChild)
+
+        tod=sh.getAttribute("tod")
+        if tod:
+            sh.removeAttribute("tod")
+            te=subElementWithText(sh, "tod", tod)
+
         n=s.nextSibling
         while n and (n.nodeType!=n.ELEMENT_NODE or n.nodeName in (SYNOPSIS,
                                                                   NOTE,

@@ -11,8 +11,8 @@
 synopsis, note {
     display: none;
 }
-/* Inline formatting and character name, extensions. */
-b, u, i, character > * {
+/* Inline formatting, scene heading elements and character name, extensions. */
+b, u, i, scene-heading > *, character > * {
     display: inline;
 }
 
@@ -48,6 +48,12 @@ scene-heading, action, transition, dialogue, dual-dialogue {
 scene-heading {
     page-break-after: avoid;
 }
+scene-heading > setting::after {
+    content: " ";
+}
+scene-heading > tod::before {
+    content: " -- ";
+}
 transition {
     /*margin-left: 4in;*/
     text-align: right;
@@ -61,8 +67,8 @@ character {
     margin-left: 1in;
     page-break-after: avoid;
 }
-character > extension:first-child {
-    padding-left: 1em;
+character > extension:first-child::before {
+    content: " ";
 }
 dialogue > line {
     width: 3.5in;

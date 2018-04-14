@@ -36,7 +36,10 @@
 <!-- "Scene numbers are any alphanumerics (plus dashes and periods)"
      so cannot declare ID. -->
 <!ATTLIST scene id CDATA #IMPLIED>
-<!ELEMENT scene-heading (#PCDATA)>
+<!ELEMENT scene-heading (setting?, location, tod?)>
+<!ELEMENT setting (#PCDATA)>
+<!ELEMENT location (#PCDATA)>
+<!ELEMENT tod (#PCDATA)>
 
 <!ELEMENT dialogue (character, (line|parenthetical)+)>
 <!ELEMENT character (name, extension*)>
