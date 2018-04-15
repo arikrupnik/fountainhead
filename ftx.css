@@ -48,10 +48,10 @@ scene-heading, action, transition, dialogue, dual-dialogue {
 scene-heading {
     page-break-after: avoid;
 }
-scene-heading > setting::after {
+scene-heading > setting:after {
     content: " ";
 }
-scene-heading > tod::before {
+scene-heading > tod:before {
     content: " -- ";
 }
 transition {
@@ -67,7 +67,7 @@ character {
     margin-left: 1in;
     page-break-after: avoid;
 }
-character > extension:first-child::before {
+character > extension:before {
     content: " ";
 }
 dialogue > line {

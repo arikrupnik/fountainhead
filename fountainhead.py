@@ -546,16 +546,16 @@ def findElementByAttributeValue(n, attr, value):
 # Dependencies
 
 def find_dependencies(infile):
-    deps=[]
+    deps=set()
     for l in infile:
         # consider abstracting .rstrip("\r\n"), etc. into a function
         # that both find_dependencies and parse_fountain can use
         if l.startswith("=<"):
             f,_=filename_fragment(l[2:].rstrip("\r\n"), infile.name)
-            deps.append(f)
+            deps.add(f)
             try:
                 i=open(f)
-                deps.extend(find_dependencies(i))
+                deps |= find_dependencies(i)
             except IOError:
                 pass
     return deps
