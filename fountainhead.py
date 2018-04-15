@@ -137,22 +137,10 @@ def parse_line(line, fountain, nextline, syntax_extensions):
     sline = line.strip()
     
     # first, I consider forcing elements
-    
-    # "Note that only a single leading period followed by an
-    # alphanumeric character will force a Scene Heading. This allows
-    # the writer to begin Action and Dialogue elements with ellipses
-    # without worry that they'll be interpreted as Scene Headings."
-    if sline.startswith(".") and not sline.startswith(".."):
-        return push_scene_heading(fountain, sline[1:].lstrip())
     if sline.startswith("!"):
         return push_element(fountain, ACTION, sline[1:])
-    if sline.startswith("@"):
-        return push_character(fountain, sline[1:].lstrip())
-    if sline.startswith(">") and not sline.endswith("<"):
-        return push_element(fountain, TRANSITION, sline[1:].lstrip())
 
     # next, I handle context-free elements
-    
     if sline.startswith("#"):
         # "If there are capturing groups in the separator and it
         # matches at the start of the string, the result will start
@@ -171,42 +159,59 @@ def parse_line(line, fountain, nextline, syntax_extensions):
         return push_element(fountain, SYNOPSIS, sline[1:].lstrip())
 
     # next, elements that require lookahead or lookback
-    
-    # "A Scene Heading is any line that has a blank line following it,
-    # and either begins with INT or EXT or similar (full list
-    # below). A Scene Heading always has at least one blank line
-    # preceding it."
-    # "A line beginning with any of the following, followed by either a
-    # dot or a space, is considered a Scene Heading (unless the line
-    # is preceded by an exclamation point !). Case insensitive.
-    # INT  EXT  EST  INT./EXT  INT/EXT  I/E"
     if last_line_empty(fountain):
         if not nextline:
+            # "A Scene Heading is any line that has a blank line
+            # following it, and either begins with INT or EXT or
+            # similar (full list below). A Scene Heading always has at
+            # least one blank line preceding it."
+            # "A line beginning with any of the following, followed by
+            # either a dot or a space, is considered a Scene Heading
+            # (unless the line is preceded by an exclamation point
+            # !). Case insensitive.  INT EXT EST INT./EXT INT/EXT I/E"
             token = re.split(r"[\. ]", sline+" ")[0].upper()
             if token in ("INT", "EXT", "EST", "INT/EXT", "I/E"):
                 return push_scene_heading(fountain,
                                           sline[len(token)+1:].lstrip(),
                                           setting=sline[:len(token)+1].rstrip())
+            # "You can "force" a Scene Heading by starting the line
+            # with a single period. Note that only a single leading
+            # period followed by an alphanumeric character will force
+            # a Scene Heading. This allows the writer to begin Action
+            # and Dialogue elements with ellipses without worry that
+            # they'll be interpreted as Scene Headings."
+            if sline.startswith(".") and not sline.startswith(".."):
+                return push_scene_heading(fountain, sline[1:].lstrip())
+
+            # "The requirements for Transition elements are:
+            # Uppercase; Preceded by and followed by an empty line;
+            # Ending in TO:"
             if line.upper()==line:
-                # "The requirements for Transition elements are:
-                # Uppercase; Preceded by and followed by an empty
-                # line; Ending in TO:"
                 if line.endswith("TO:"):
                     return push_element(fountain, TRANSITION, sline)
+            # "You can force any line to be a transition by beginning
+            # it with a greater-than symbol >."
+            if sline.startswith(">") and not sline.endswith("<"):
+                return push_element(fountain, TRANSITION, sline[1:].lstrip())
 
-    # "A Character element is any line entirely in uppercase, with one
-    # empty line before it and without an empty line after it."
     if last_line_empty(fountain):
         if nextline:
+            # "A Character element is any line entirely in uppercase,
+            # with one empty line before it and without an empty line
+            # after it."
             if line.upper()==line:
                 # "Character names must include at least one
                 # alphabetical character. "R2D2" works, but "23" does
                 # not."
                 if re.sub(r"[0-9_]", "", re.sub(r"\W", "", line)):
                     return push_character(fountain, sline)
+            # "You can force a Character element by preceding it with
+            # the "at" symbol @."
+            if sline.startswith("@"):
+                return push_character(fountain, sline[1:].lstrip())
 
     # "Dialogue is any text following a Character or Parenthetical
-    # element." (really, any non-empty line -ak)
+    # element."
     # "Parentheticals follow a Character or Dialogue element, and are
     # wrapped in parentheses ()."
     if line and fountain.hasChildNodes() and fountain.lastChild.nodeName in (CHARACTER, EXTENSION, PARENTHETICAL, DIALOGUE):
