@@ -1,0 +1,41 @@
+/* ftx-bd.css: stylesheet adds script breakdown highlighting to ftx.css */
+
+bd[class=character] {
+    background-color: red;
+    color: white;
+}
+bd[class=extra] {
+    background-color: yellow;
+}
+bd[class=stunts] {
+    background-color: orange;
+}
+bd[class=fx] {
+    background-color: blue;
+    color: white;
+}
+bd[class=sound] {
+    background-color: olive;
+    color: white;
+}
+bd[class=vehicle] {
+    background-color: fuchsia;
+}
+bd[class=animal] {
+    background-color: fuchsia;
+}
+bd[class=prop] {
+    background-color: purple;
+    color: white;
+}
+bd[class=wardrobe] {
+    background-color: gray;
+    color: white;
+}
+bd[class=makeup] {
+    background-color: gray;
+    color: white;
+}
+bd[class=other] {
+    background-color: silver;
+}

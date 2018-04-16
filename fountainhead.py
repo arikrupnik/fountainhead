@@ -45,7 +45,7 @@ def parse_fountain(lines, args):
     structure_dialogue(doc)
     structure_scenes(doc)
     structure_sections(doc)
-    parse_inlines(doc, args.semantic_linebreaks)
+    parse_inlines(doc, args.semantic_linebreaks, args.syntax_extensions)
     reconstitute_notes(doc, notes)
     if args.syntax_extensions:
         process_includes(doc, args)
@@ -386,9 +386,12 @@ def structure_sections(doc):
 
 # Inline Formatting and Mixed Content
 
-def parse_inlines(doc, semantic_linebreaks):
+def parse_inlines(doc, semantic_linebreaks, syntax_extensions):
+    if syntax_extensions:
+        m=markdown.Markdown(extensions=[FountainInlinesExt()])
+    else:
+        m=markdown.Markdown(extensions=[FountainInlines()])
     # assuming these have text-only content at this point
-    m=markdown.Markdown(extensions=[FountainInlines()])
     for tag in (TITLE_VALUE, ACTION, DIALOGUE):
         for e in doc.getElementsByTagName(tag):
             text=e.removeChild(e.firstChild).nodeValue
@@ -402,10 +405,20 @@ def parse_inlines(doc, semantic_linebreaks):
                 mds=m.convert(l)
                 if mds:
                     p=xml.dom.minidom.parseString(mds.encode("utf-8")).documentElement
-                    c=p.firstChild
-                    while c:
-                        e.appendChild(c)
-                        c=p.firstChild
+                    for a in p.getElementsByTagName("a"):
+                        breakdown_link(a)
+                    while p.firstChild:
+                        e.appendChild(p.firstChild)
+
+def breakdown_link(a):
+    bd=ownerDocument(a).createElement("bd")
+    bd.setAttribute("class", a.getAttribute("href"))
+    bd.setAttribute("idref", a.getAttribute("title"))
+    # in the absense of @title, consider mangling cdata content into NMTOKEN
+    while a.firstChild:
+        bd.appendChild(a.firstChild)
+    a.parentNode.replaceChild(bd, a)
+    return bd
 
 """Markdown extension that captures Fountain inline emphasis rules.
 Fountain recognizes only underline, italic and bold inlines, and these
@@ -431,6 +444,7 @@ class FountainInlines(markdown.extensions.Extension):
         # between *italic* and _underline_
         md.inlinePatterns.clear()
         md.inlinePatterns["escape"] = ip.EscapePattern(r'\\(.)', md)
+        self.extendMarkdownLinks(md, md_globals)
         md.inlinePatterns["center"] = ip.SimpleTagPattern(r'(^\s*>\s*)(.+?)(\s*<\s*$)', "center")
         md.inlinePatterns["lyric"]  = ip.SimpleTagPattern(r'(^~)(.+?)($)', "lyric")
         # stand-alone * or _
@@ -448,6 +462,17 @@ class FountainInlines(markdown.extensions.Extension):
         
         # not strictly speaking formatting, but these are inline
         md.inlinePatterns["note"]   = ip.SimpleTagPattern(r'(\[\[)(.+?)(\]\])', 'note')
+
+    """subclasses can add link patterns"""
+    def extendMarkdownLinks(self, md, md_globals):
+        pass
+
+"""Markdown extension that captures Fountain inline emphasis rules
+plus Fountainhead syntax extensions. With inline syntax extensions,
+Fountainhead interprets Markdown links as script breakdown markup."""
+class FountainInlinesExt(FountainInlines):
+    def extendMarkdownLinks(self, md, md_globals):
+        md.inlinePatterns["a"] = ip.LinkPattern(ip.LINK_RE, md)
 
 
 def reconstitute_notes(doc, notes):
@@ -482,6 +507,8 @@ def reconstitute_notes(doc, notes):
             n.parentNode.replaceChild(
                 doc.createTextNode("\n"+ns.nodeValue.lstrip("\n")),
                 ns)
+
+# File inclusion and filename handling
 
 def filename_fragment(filename, infilename):
     tokens=filename.rsplit("#", 1)

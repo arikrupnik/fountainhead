@@ -16,7 +16,9 @@
      authoring. FTX prefers unambiguous element names to short
      ones. -->
 
-<!ENTITY % formatting "#PCDATA|b|u|i|note|lyric">
+<!-- consider pulling note and bd out of formatting:
+     they have semantic value in production -->
+<!ENTITY % formatting "#PCDATA|b|u|i|note|lyric|bd">
 
 <!ENTITY % scene "action|dialogue|dual-dialogue|synopsis">
 <!ENTITY % block "%scene;|scene|transition|section">
@@ -72,3 +74,8 @@
 <!ELEMENT b (%formatting;)*>
 <!ELEMENT u (%formatting;)*>
 <!ELEMENT i (%formatting;)*>
+
+<!-- Fountahead extension: script breakdown -->
+<!ELEMENT bd (%formatting;)*>
+<!ATTLIST bd class (character|extra|stunts|fx|sound|vehicle|animal|prop|wardrobe|makeup|other) #REQUIRED>
+<!ATTLIST bd idref CDATA #REQUIRED>
