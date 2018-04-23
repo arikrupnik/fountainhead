@@ -55,6 +55,8 @@ include $(wildcard *.d)
 # intermediary
 .ftx.pdf:
 	$(WEASYPRINT) -s $(FOUNTAINHEADDIR)/ftx.css $< $@
+%-bd.pdf : %.ftx
+	$(WEASYPRINT) -s $(FOUNTAINHEADDIR)/ftx.css -s $(FOUNTAINHEADDIR)/ftx-bd.css $< $@
 
 
 # markdown toolchain: .md.html.pdf
