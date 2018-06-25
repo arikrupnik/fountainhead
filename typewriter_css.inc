@@ -22,7 +22,8 @@ h1, h2 { text-decoration: underline; }
             margin-left: .75in;
         }
   /*body { margin: 1in; }*/
-  h1, h1, h2, h3, h4, h5, h6 { page-break-after: avoid }
+  h1, h2, h3, h4, h5, h6 { page-break-after: avoid }
+  h2, h3, h4, h5, h6 { bookmark-level: none }
 }
 
 </style>

@@ -530,7 +530,7 @@ def process_includes(doc, args):
             a=doc.createElement(ACTION)
             a.appendChild(doc.createTextNode(filename + ": " + e.strerror))
             i.parentNode.replaceChild(a, i)
-            return
+            continue
         child_doc=parse_fountain(f, args)
         fragment=fragment_id and findElementByAttributeValue(child_doc, "id", fragment_id)
         if fragment:

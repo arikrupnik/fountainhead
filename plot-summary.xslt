@@ -4,33 +4,6 @@
   
   <xsl:output method="text"/>
 
-  <xsl:template match="/fountain">
-    <xsl:for-each select="title-page">
-      <xsl:for-each select="key[@name='Title']">
-        <xsl:text># </xsl:text>
-        <xsl:value-of select="value"/>
-        <xsl:text>&#xa;&#xa;</xsl:text>
-      </xsl:for-each>
-      <xsl:for-each select="key[@name='Logline']">
-        <xsl:value-of select="value"/>
-        <xsl:text>&#xa;&#xa;</xsl:text>
-      </xsl:for-each>
-      <xsl:for-each select="key[@name='Project Home']">
-        <xsl:text>## &lt;</xsl:text>
-        <xsl:value-of select="value"/>
-        <xsl:text>&gt;&#xa;&#xa;</xsl:text>
-      </xsl:for-each>
-      <xsl:for-each select="key[@name='Version']">
-        <xsl:text>### revision: </xsl:text>
-        <xsl:value-of select="value"/>
-        <xsl:text>&#xa;&#xa;</xsl:text>
-      </xsl:for-each>
-    </xsl:for-each>
-    <xsl:text># Plot Summary</xsl:text>
-    <xsl:apply-templates/>
-    <xsl:text>&#xa;&#xa;</xsl:text>
-  </xsl:template>
-
   <xsl:template match="title-page | text()">
     <!-- omit metadata and character content by default but descend into elements -->
   </xsl:template>

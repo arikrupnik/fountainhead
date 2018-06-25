@@ -1,17 +1,53 @@
 import sys
 import xml.dom.minidom
-import csv
-import codecs
+import collections
+
+class Breakdown(object):
+    def __init__(self):
+        self.scenes = []
+        self.locations = collections.defaultdict(list)
+        self.characters = collections.defaultdict(list)
+
+class Scene(object):
+    def __init__(self, id, setting, location, tod):
+        self.id = id
+        self.setting = setting
+        self.location = location
+        self.tod = tod
+        self.character_names = set()
+
+class Element(object):
+    def __init__(self, id):
+        self.name = id
+        self.scenes = []
+
+# This is very basic. This algorithm is likely to break is some scenes
+# already have numeric IDs--admittedly an unlikely usecase.
+def number_scenes(fountain):
+    seq=0
+    for s in fountain.getElementsByTagName("scene"):
+        ids=set()
+        seq+=1
+        id=s.getAttribute("id")
+        if id:
+            if id in ids:
+                raise ValueError("duplicate section id: " + id)
+        else:
+            id = str(seq)
+            while id in ids:
+                seq+=1
+                id = str(seq)
+            s.setAttribute("id", id)
+        ids.add(id)
 
 def breakdown(fountain):
-    f = csv.writer(sys.stdout)
-    all_names = set()
-    for n in fountain.getElementsByTagName("name"):
-        all_names.add(n.firstChild.nodeValue)
+    number_scenes(fountain)
+
+    bd = Breakdown()
         
-    for s in fountain.getElementsByTagName("scene"):
-        id = s.getAttribute("id")
-        heading = s.getElementsByTagName("scene-heading")[0]
+    for e_s in fountain.getElementsByTagName("scene"):
+        id = e_s.getAttribute("id")
+        heading = e_s.getElementsByTagName("scene-heading")[0]
         try:
             setting = heading.getElementsByTagName("setting")[0].firstChild.nodeValue
         except IndexError:
@@ -22,13 +58,32 @@ def breakdown(fountain):
         except IndexError:
             tod=None
 
-        names = set()
-        for n in s.getElementsByTagName("name"):
-            names.add(n.firstChild.nodeValue)
+        bs=Scene(id, setting, location, tod)
+        bd.scenes.append(bs)
 
-        #print id, setting, location, tod, "; ". join(sorted(names))
-        f.writerow(map(lambda s: s and codecs.encode(s, "utf-8"),
-                       (id, setting, location, tod, "\n". join(sorted(names)))))
+        bd.locations[location].append(id)
+
+        for n in e_s.getElementsByTagName("name"):
+            name = n.firstChild.nodeValue
+            bs.character_names.add(name)
+
+        for e_bd in e_s.getElementsByTagName("bd"):
+            c = e_bd.getAttribute("class")
+            if c=="character":
+                bs.character_names.add(e_bd.getAttribute("idref"))
+
+    return bd
 
 if __name__=="__main__":
-    breakdown(xml.dom.minidom.parse(sys.stdin))
+    bd = breakdown(xml.dom.minidom.parse(sys.stdin))
+
+    print "LOCATIONS:"
+    for l in sorted(bd.locations.keys()):
+        print l, "("+str(len(bd.locations[l]))+"):", ", ".join(bd.locations[l])
+    print
+
+    print "SCENES:"
+    for i, s in enumerate(bd.scenes):
+        print i+1, s.id, "|", s.setting or "", "|", s.location, "|", s.tod
+        print " characters:", ", ".join(sorted(s.character_names))
+

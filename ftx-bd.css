@@ -1,5 +1,10 @@
 /* ftx-bd.css: stylesheet adds script breakdown highlighting to ftx.css */
 
+scene-heading {
+    font-weight: bold;
+    background-color: yellow;
+}
+
 bd[class=character] {
     background-color: red;
     color: white;

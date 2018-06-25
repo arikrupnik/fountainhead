@@ -30,7 +30,7 @@ GIT=git
 # refinement in case of recursive make(1) invocations)
 DICT_FILE=./aspell.en.pws
 
-.SUFFIXES: .fountain .d .ftx .pdf .md .html .plot-summary
+.SUFFIXES: .fountain .d .ftx .pdf .md .html .plot-summary .header
 
 GIT_VERSION=$(shell $(GIT) describe --tags || $(GIT) rev-parse --short HEAD)
 
@@ -73,6 +73,9 @@ include $(wildcard *.d)
 
 # additional artifacts from .fountain
 
+# markdown header
+.ftx.header:
+	$(XSLTPROC) -o $@ $(FOUNTAINHEADDIR)/header.xslt $<
 # markdown plot summary
 .ftx.plot-summary:
 	$(XSLTPROC) -o $@ $(FOUNTAINHEADDIR)/plot-summary.xslt $<
