@@ -133,8 +133,8 @@ title-page > key[name="Source"] {
     text-align: center;
 }
 title-page > key[name="Contact"],
-title-page > key[name="Draft date"],
-title-page > key[name="Copyright"] {
+title-page > key[name="Draft date"]/*,
+title-page > key[name="Copyright"]*/ {
     display: block;
     text-align: left;
 }
