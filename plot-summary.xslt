@@ -10,9 +10,14 @@
 
   <xsl:template match="synopsis//text()">
     <xsl:value-of select="."/>
-    <xsl:if test="../following-sibling::synopsis">
-      <xsl:text>&#xa;</xsl:text>
-    </xsl:if>
+    <xsl:choose>
+      <xsl:when test="../following-sibling::synopsis">
+        <xsl:text>&#xa;</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:text> </xsl:text>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
 
   <xsl:template match="section">

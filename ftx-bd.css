@@ -1,5 +1,12 @@
 /* ftx-bd.css: stylesheet adds script breakdown highlighting to ftx.css */
 
+scene[id]:before {
+    content: attr(id);
+    float: right;
+    font-style: italic;
+    text-decoration: underline;
+}
+
 scene-heading {
     font-weight: bold;
     background-color: yellow;

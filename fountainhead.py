@@ -413,8 +413,7 @@ def parse_inlines(doc, semantic_linebreaks, syntax_extensions):
 def breakdown_link(a):
     bd=ownerDocument(a).createElement("bd")
     bd.setAttribute("class", a.getAttribute("href"))
-    bd.setAttribute("idref", a.getAttribute("title"))
-    # in the absense of @title, consider mangling cdata content into NMTOKEN
+    bd.setAttribute("idref", a.getAttribute("title") or a.firstChild.nodeValue.upper())
     while a.firstChild:
         bd.appendChild(a.firstChild)
     a.parentNode.replaceChild(bd, a)

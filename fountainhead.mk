@@ -41,7 +41,7 @@ GIT_VERSION=$(shell $(GIT) describe --tags || $(GIT) rev-parse --short HEAD)
 	$(PYTHON) $(FOUNTAINHEADDIR)/fountainhead.py -M $< > $*.d
 	$(PYTHON) $(FOUNTAINHEADDIR)/fountainhead.py -sx -m Version "$(GIT_VERSION)" -c $(FOUNTAINHEADDIR)/ftx.css $< > $@_
 	$(XMLLINT) --noout --dtdvalid $(FOUNTAINHEADDIR)/ftx.dtd $@_
-	$(ASPELL) list -H -p $(DICT_FILE) < $@_ > $@_nondict
+	$(XSLTPROC) $(FOUNTAINHEADDIR)/strip-for-spelling.xslt $@_ | $(ASPELL) list -H -p $(DICT_FILE) > $@_nondict
 	if [ -s $@_nondict ]; then $(GREP) -nwFf $@_nondict --color=auto $< `sed 's/^.*://' $*.d`; rm $@_nondict; exit 1; fi
 	rm $@_nondict
 	mv $@_ $@
