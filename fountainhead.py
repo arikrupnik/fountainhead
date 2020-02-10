@@ -5,6 +5,7 @@ import re
 import codecs
 import xml.dom.minidom
 import markdown
+import markdown.blockprocessors as bp
 import markdown.inlinepatterns as ip
 import argparse
 import os.path
@@ -388,9 +389,9 @@ def structure_sections(doc):
 
 def parse_inlines(doc, semantic_linebreaks, syntax_extensions):
     if syntax_extensions:
-        m=markdown.Markdown(extensions=[FountainInlinesExt()])
+        m=FountainInlinesExt()
     else:
-        m=markdown.Markdown(extensions=[FountainInlines()])
+        m=FountainInlines()
     # assuming these have text-only content at this point
     for tag in (TITLE_VALUE, ACTION, DIALOGUE):
         for e in doc.getElementsByTagName(tag):
@@ -425,8 +426,23 @@ Fountain recognizes only underline, italic and bold inlines, and these
 it calls out as such rather than generic "emphasis." This extension
 removes all built-in Markdown patterns and installs Fountain-specific
 ones."""
-class FountainInlines(markdown.extensions.Extension):
-    def extendMarkdown(self, md, md_globals):
+class FountainInlines(markdown.Markdown):
+
+    def build_parser(self):
+        """Overrides the deault implementation to start with an empty
+        self.inlinePatterns and (almost) empty
+        self.parser.blockprocessors. Otherwise, a copy of the
+        original.
+        """
+        self.preprocessors = markdown.preprocessors.build_preprocessors(self)
+        self.parser = self.build_block_parser()
+        self.inlinePatterns = self.build_inlinepatterns()
+        self.extendMarkdownLinks()
+        self.treeprocessors = markdown.treeprocessors.build_treeprocessors(self)
+        self.postprocessors = markdown.postprocessors.build_postprocessors(self)
+        return self
+
+    def build_block_parser(self):
         # I use Makrdown to parse inline formatting in individual
         # lines of text; block structure I handle in parse_line()
         # above. Unless this strategy changes, none of the block
@@ -434,45 +450,47 @@ class FountainInlines(markdown.extensions.Extension):
         # mixed content in <p>'s. Many actively interfere with
         # Fountain syntax, e.g., BlockQuoteProcessor replaces
         # '>center<' with <blockquote>center&lt;</blocquote>
-        md.parser.blockprocessors.clear()
-        md.parser.blockprocessors["paragraph"]=\
-            markdown.blockprocessors.ParagraphProcessor(md.parser)
+        parser = markdown.blockparser.BlockParser(self)
+        parser.blockprocessors.register(bp.ParagraphProcessor(parser), "paragraph", 10)
+        return parser
 
+    def build_inlinepatterns(self):
         # I use the markdown mechanism for inlinePatterns, but replace
         # all built-in patterns. Some markdown patterns look similar
         # to Fountain but aren't: e.g., Fountain differentiates
         # between *italic* and _underline_
-        md.inlinePatterns.clear()
-        md.inlinePatterns["escape"] = ip.EscapePattern(r'\\(.)', md)
-        self.extendMarkdownLinks(md, md_globals)
-        md.inlinePatterns["center"] = ip.SimpleTagPattern(r'(^\s*>\s*)(.+?)(\s*<\s*$)', "center")
-        md.inlinePatterns["lyric"]  = ip.SimpleTagPattern(r'(^~)(.+?)($)', "lyric")
+        inlinePatterns = markdown.util.Registry()
+        inlinePatterns.register(ip.EscapeInlineProcessor(ip.ESCAPE_RE, self), 'escape', 180)
+        inlinePatterns.register(ip.SimpleTagPattern(r'(^\s*>\s*)(.+?)(\s*<\s*$)', "center"), "center", 170)
+        inlinePatterns.register(ip.SimpleTagPattern(r'(^~)(.+?)($)', "lyric"), "lyric", 160)
         # stand-alone * or _
-        md.inlinePatterns["not_em"] = ip.SimpleTextPattern(r'((^| )(\*|_)( |$))')
+        inlinePatterns.register(ip.SimpleTextPattern(r'((^| )(\*|_)( |$))'), "not_em", 160)
         # ***italic bold*** or ***italic*bold**
-        md.inlinePatterns["b_i"]    = ip.DoubleTagPattern(r'(\*)\2{2}(.+?)\2(.*?)\2{2}', 'b,i')
+        inlinePatterns.register(ip.DoubleTagPattern(r'(\*)\2{2}(.+?)\2(.*?)\2{2}', 'b,i'), "b_i", 150)
         # ***bold**italic*
-        md.inlinePatterns["i_b"]    = ip.DoubleTagPattern(r'(\*)\2{2}(.+?)\2{2}(.*?)\2', 'i,b')
+        inlinePatterns.register(ip.DoubleTagPattern(r'(\*)\2{2}(.+?)\2{2}(.*?)\2', 'i,b'), "i_b", 140)
         # **bold**
-        md.inlinePatterns["b"]      = ip.SimpleTagPattern(r'(\*{2})(.+?)\2', 'b')
+        inlinePatterns.register(ip.SimpleTagPattern(r'(\*{2})(.+?)\2', 'b'), "b", 130)
         # *italic*
-        md.inlinePatterns["i"]      = ip.SimpleTagPattern(r'(\*)([^\*]+)\2', 'i')
-        # _underline_
-        md.inlinePatterns["u"]      = ip.SimpleTagPattern(r'(_)(.+?)\2', 'u')
+        inlinePatterns.register(ip.SimpleTagPattern(r'(\*)([^\*]+)\2', 'i'), "i", 120)
+        # _undeline_
+        inlinePatterns.register(ip.SimpleTagPattern(r'(_)(.+?)\2', 'u'), "u", 110)
         
         # not strictly speaking formatting, but these are inline
-        md.inlinePatterns["note"]   = ip.SimpleTagPattern(r'(\[\[)(.+?)(\]\])', 'note')
+        inlinePatterns.register(ip.SimpleTagPattern(r'(\[\[)(.+?)(\]\])', "note"), "note", 10)
+
+        return inlinePatterns
 
     """subclasses can add link patterns"""
-    def extendMarkdownLinks(self, md, md_globals):
+    def extendMarkdownLinks(self):
         pass
 
 """Markdown extension that captures Fountain inline emphasis rules
 plus Fountainhead syntax extensions. With inline syntax extensions,
 Fountainhead interprets Markdown links as script breakdown markup."""
 class FountainInlinesExt(FountainInlines):
-    def extendMarkdownLinks(self, md, md_globals):
-        md.inlinePatterns["a"] = ip.LinkPattern(ip.LINK_RE, md)
+    def extendMarkdownLinks(self):
+        self.inlinePatterns.register(ip.LinkInlineProcessor(ip.LINK_RE, self), 'link', 160)
 
 
 def reconstitute_notes(doc, notes):
