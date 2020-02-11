@@ -613,7 +613,10 @@ def make_rule(args):
     else:
         return ""
 
-def main(argv):
+
+# Command-line invocation
+
+def arg_parser():
     ap=argparse.ArgumentParser(description="Convert Fountain input to XML.")
     ap.add_argument("-s", "--semantic-linebreaks",
                     action="store_true",
@@ -636,7 +639,10 @@ def main(argv):
     ap.add_argument("infile", metavar="file.fountain", nargs="?",
                     type=argparse.FileType("r"),
                     default=sys.stdin)
-    args=ap.parse_args()
+    return ap
+
+def main(argv):
+    args=arg_parser().parse_args()
 
     if args.dependencies:
         print make_rule(args)
