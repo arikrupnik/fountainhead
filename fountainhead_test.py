@@ -310,5 +310,5 @@ DIR = os.path.dirname(os.path.abspath(__file__))
 @pytest.mark.xfail
 def test_file_sample(f):
     ft = open(f)
-    xml = open(os.path.splitext(f)[0]+".ftx").read()
+    xml = open(os.path.splitext(f)[0]+".ftx").read( )
     assert parse_fountain(ft, DEFAULT_ARGS).toxml() == xml
