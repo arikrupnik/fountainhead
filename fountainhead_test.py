@@ -264,7 +264,31 @@ Yippie ki-yay! I got my lower-case C back!
         assert ftx(ft.replace("@", "")).getElementsByTagName("character").length == 0
 
 class TestDialogue:
-    pass
+    def test_basics(self):
+        # "Dialogue is any text following a Character or Parenthetical
+        # element."
+        ft = """
+SANBORN
+A good 'ole boy. You know, loves the Army, blood runs green. Country boy. Seems solid.
+"""
+        xml = """
+<fountain><dialogue><character><name>SANBORN</name></character><line>A good 'ole boy. You know, loves the Army, blood runs green. Country boy. Seems solid.</line></dialogue><action/></fountain>
+"""
+        assert_transform(ft, xml)
+
+    def test_line_breaks(self):
+        # "Manual line breaks are allowed in Dialogue"
+        ft = """DAN
+Then let's retire them. 
+_Permanently_.
+"""
+        xml = """
+<fountain><dialogue><character><name>DAN</name></character><line>Then let's retire them.
+<u>Permanently</u>.</line></dialogue><action/></fountain>
+"""
+        assert_transform(ft, xml)
+        # but with semantic linbreaks option, Fountainhead folds adjacent lines
+        assert_transform(ft, xml.replace("\n", " "), SEMANTIC_LINES)
 
 class TestParenthetical:
     pass
