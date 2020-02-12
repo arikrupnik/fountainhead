@@ -291,7 +291,14 @@ _Permanently_.
         assert_transform(ft, xml.replace("\n", " "), SEMANTIC_LINES)
 
 class TestParenthetical:
-    pass
+    def test_basics(self):
+        ft = """
+STEEL
+(starting the engine)
+So much for retirement!
+"""
+        xml = "<fountain><dialogue><character><name>STEEL</name></character><parenthetical>(starting the engine)</parenthetical><line>So much for retirement!</line></dialogue><action/></fountain>"
+        assert_transform(ft, xml)
 
 class TestDualDialogue:
     pass
