@@ -2,6 +2,8 @@
 
 import fountainhead
 import pytest
+import glob
+import os
 
 DEFAULT_ARGS = fountainhead.arg_parser().parse_args("")
 SEMANTIC_LINES = fountainhead.arg_parser().parse_args(["-s",])
@@ -302,3 +304,11 @@ class TestBoneYard:
 
 class TestSectionsAndSynopses:
     pass
+
+DIR = os.path.dirname(os.path.abspath(__file__))
+@pytest.mark.parametrize("f", glob.glob(os.path.join(DIR, "tests/*.fountain")))
+@pytest.mark.xfail
+def test_file_sample(f):
+    ft = open(f)
+    xml = open(os.path.splitext(f)[0]+".ftx").read()
+    assert parse_fountain(ft, DEFAULT_ARGS).toxml() == xml
