@@ -179,7 +179,89 @@ Scott exasperatedly throws down the card on the table and picks up the phone, hi
         # this doesn't test for tabs--original sample has spaces only
 
 class TestCharacter:
-    pass
+    # "A Character element is any line entirely in uppercase, with one
+    # empty line before it and without an empty line after it."
+    def test_basics(self):
+        # This is the example that appears in the spec. It does not
+        # have an empty line before it, but it is the first thing in
+        # the screenplay
+        ft = """STEEL
+The man's a myth!"""
+        xml = "<fountain><dialogue><character><name>STEEL</name></character><line>The man's a myth!</line></dialogue></fountain>"
+        assert_transform(ft, xml)
+        # "If you want to indent a Character element with tabs or
+        # spaces, you can, but it is not necessary."
+        assert_transform("    "+ft, xml)
+    def test_basics_with_preceding_elements(self):
+        ft = """
+trailing text.
+
+STEEL
+The man's a myth!"""
+        assert ftx(ft).getElementsByTagName("dialogue").length == 1
+    def test_basics_without_preceding_empty_line(self):
+        ft = """
+trailing text.
+STEEL
+The man's a myth!"""
+        assert ftx(ft).getElementsByTagName("dialogue").length == 0
+    def test_basics_with_following_empty_line(self):
+        ft = """
+trailing text.
+
+STEEL
+
+The man's a myth!"""
+        assert ftx(ft).getElementsByTagName("dialogue").length == 0
+
+    # This fails. Fountainhead takes the preceding stipulation, "A
+    # Character element is any line entirely in uppercase..."
+    # literally. So "MOM (O. S.)" parses as a character line, but
+    # "HANS (on the radio)" parses as a line of action.
+    @pytest.mark.xfail
+    def test_character_extensions(self):
+        # "'Character Extensions'--the parenthetical notations that
+        # follow a character name on the same line--may be in
+        # uppercase or lowercase"
+        ft = """
+MOM (O. S.)
+Luke! Come down for supper!
+
+HANS (on the radio)
+What was it you said?
+"""
+        xml = """
+<fountain><dialogue><character><name>MOM</name><extension>(O. S.)</extension></character><line>Luke! Come down for supper!</line></dialogue><action>HANS (on the radio)
+What was it you said?</action></fountain>
+"""
+        assert_transform(ft, xml)
+
+    def test_character_name_rules(self):
+        # "Character names must include at least one alphabetical
+        # character. "R2D2" works, but "23" does not."
+        ft = """
+R2D2
+Beep!
+
+23
+Blop!
+"""
+        xml = """
+<fountain><dialogue><character><name>R2D2</name></character><line>Beep!</line></dialogue><action>23
+Blop!</action></fountain>
+"""
+        assert_transform(ft, xml)
+
+    def test_force_character(self):
+        # "You can force a Character element by preceding it with the
+        # "at" symbol @."
+        ft = """
+@McCLANE
+Yippie ki-yay! I got my lower-case C back!
+"""
+        assert ftx(ft).getElementsByTagName("character").length == 1
+        # removing @ makes action out of McCLANE
+        assert ftx(ft.replace("@", "")).getElementsByTagName("character").length == 0
 
 class TestDialogue:
     pass
@@ -310,5 +392,5 @@ DIR = os.path.dirname(os.path.abspath(__file__))
 @pytest.mark.xfail
 def test_file_sample(f):
     ft = open(f)
-    xml = open(os.path.splitext(f)[0]+".ftx").read( )
+    xml = open(os.path.splitext(f)[0]+".ftx").read()
     assert parse_fountain(ft, DEFAULT_ARGS).toxml() == xml
