@@ -231,8 +231,7 @@ HANS (on the radio)
 What was it you said?
 """
         xml = """
-<fountain><dialogue><character><name>MOM</name><extension>(O. S.)</extension></character><line>Luke! Come down for supper!</line></dialogue><action>HANS (on the radio)
-What was it you said?</action></fountain>
+<fountain><dialogue><character><name>MOM</name><extension>(O. S.)</extension></character><line>Luke! Come down for supper!</line></dialogue><dialogue><character><name>HANS</name><extension>(on the radio)</extension></character><line>What was it you said?</line></dialogue></fountain>
 """
         assert_transform(ft, xml)
 
@@ -395,15 +394,14 @@ _underline_
         xml = "<fountain><action>Steel enters the code on the keypad <b>*9765*</b></action></fountain>"
         assert_transform(ft, xml)
 
-    # The following test fails and I disable it. Python Markdown
-    # interprets the emphasis rules differently, and I see little
-    # value in fighting it. Markdown imlementations disagree on
-    # interpreting this example:
+    # Python Markdown interprets the emphasis rules differently, and I
+    # see little value in fighting it. Markdown imlementations
+    # disagree on interpreting this example:
     # https://johnmacfarlane.net/babelmark2/?text=He+dialed+*69+and+then+*23%2C+and+then+hung+up.
     # A Python-Markdown extension existst (betterem) that can make
     # this test pass, if this becomes a user issue:
     # https://github.com/Python-Markdown/markdown/issues/910
-    @pytest.mark.skip
+    @pytest.mark.xfail
     def test_spaces_around_emphasis(self):
         # "As with Markdown, the spaces around the emphasis characters
         # are meaningful. In this example, the asterisks would not
@@ -648,20 +646,173 @@ Hit or stand sir?</line></dialogue><dialogue><character><name>MONKEY</name></cha
         assert_transform(ft, xml)
 
 class TestIndenting:
-    pass
-
-class TestNotes:
-    pass
-
-class TestBoneYard:
-    pass
-
-@pytest.mark.xfail
-class TestSectionsAndSynopses:
-    def test_(self):
+    def test_indents(self):
+        # "Leading tabs or spaces in elements other than Action will
+        # be ignored. If you choose to use them though, your Fountain
+        # text file could look quite a bit more like a screenplay."
         ft = """
+                CUT TO:
+
+INT. GARAGE - DAY
+
+BRICK and STEEL get into Mom's PORSCHE, Steel at the wheel.  They pause for a beat, the gravity of the situation catching up with them.
+
+            BRICK
+    This is everybody we've ever put away.
+
+            STEEL
+        (starting the engine)
+    So much for retirement!
+
+They speed off.  To destiny!
 """
         xml = """
+<fountain><transition>CUT TO:</transition><scene><scene-heading><setting>INT.</setting><location>GARAGE</location><tod>DAY</tod></scene-heading><action>BRICK and STEEL get into Mom's PORSCHE, Steel at the wheel.  They pause for a beat, the gravity of the situation catching up with them.</action><dialogue><character><name>BRICK</name></character><line>This is everybody we've ever put away.</line></dialogue><dialogue><character><name>STEEL</name></character><parenthetical>(starting the engine)</parenthetical><line>So much for retirement!</line></dialogue><action>They speed off.  To destiny!</action></scene></fountain>
+"""
+        assert_transform(ft, xml)
+
+class TestNotes:
+    def test_note(self):
+        # "A Note is created by enclosing some text with double
+        # brackets. Notes can be inserted between lines, or in the
+        # middle of a line."
+        ft = """
+INT. TRAILER HOME - DAY
+
+This is the home of THE BOY BAND, AKA DAN and JACK[[Or did we think of actual names for these guys?]].  They too are drinking beer, and counting the take from their last smash-and-grab.  Money, drugs, and ridiculous props are strewn about the table.
+
+[[It was supposed to be Vietnamese, right?]]
+
+JACK
+(in Vietnamese, subtitled)
+*Did you know Brick and Steel are retired?*"""
+        # Not sure if Fountain would have the NOTE as part of the
+        # action or outside it.
+        xml = """
+<fountain><scene><scene-heading><setting>INT.</setting><location>TRAILER HOME</location><tod>DAY</tod></scene-heading><action>This is the home of THE BOY BAND, AKA DAN and JACK<note>Or did we think of actual names for these guys?</note>.  They too are drinking beer, and counting the take from their last smash-and-grab.  Money, drugs, and ridiculous props are strewn about the table.
+
+<note>It was supposed to be Vietnamese, right?</note></action><dialogue><character><name>JACK</name></character><parenthetical>(in Vietnamese, subtitled)</parenthetical><line><i>Did you know Brick and Steel are retired?</i></line></dialogue></scene></fountain>
+"""
+        assert_transform(ft, xml)
+    def test_multiline_note(self):
+        # "Notes can contain carriage returns, but if you wish a note
+        # to contain an empty line, you must place two spaces there to
+        # "connect" the element into one."
+        ft = """
+His hand is an inch from the receiver when the phone RINGS.  Scott pauses for a moment, suspicious for some reason.[[This section needs work.
+Either that, or I need coffee.
+  
+Definitely coffee.]] He looks around.  Phone ringing.
+"""
+        xml = """
+<fountain><action>His hand is an inch from the receiver when the phone RINGS.  Scott pauses for a moment, suspicious for some reason.<note>This section needs work.
+Either that, or I need coffee.
+  
+Definitely coffee.</note> He looks around.  Phone ringing.</action></fountain>
+"""
+        assert_transform(ft, xml)
+        # Without the two spaces, I'm not sure what the spec wants me
+        # to do. As it stands, I keep looking for the closing ]]
+        ft = """
+His hand is an inch from the receiver when the phone RINGS.  Scott pauses for a moment, suspicious for some reason.[[This section needs work.
+Either that, or I need coffee.
+
+Definitely coffee.]] He looks around.  Phone ringing.
+"""
+        xml = """
+<fountain><action>His hand is an inch from the receiver when the phone RINGS.  Scott pauses for a moment, suspicious for some reason.<note>This section needs work.
+Either that, or I need coffee.
+
+Definitely coffee.</note> He looks around.  Phone ringing.</action></fountain>
+"""
+        assert_transform(ft, xml)
+
+class TestBoneYard:
+    def test_boneyard(self):
+        # "f you want Fountain to ignore some text, wrap it with /*
+        # some text */. In this example, an entire scene is put in the
+        # boneyard. It will be ignored completely on formatted
+        # output."
+        ft = """
+COGNITO
+Everyone's coming after you mate!  Scorpio, The Boy Band, Sparrow, Point Blank Sniper...
+
+As he rattles off the long list, Brick and Steel share a look.  This is going to be BAD.
+
+CUT TO:
+/*
+INT. GARAGE - DAY
+
+BRICK and STEEL get into Mom's PORSCHE, Steel at the wheel.  They pause for a beat, the gravity of the situation catching up with them.
+
+BRICK
+This is everybody we've ever put away.
+
+STEEL
+(starting the engine)
+So much for retirement!
+
+They speed off.  To destiny!
+
+CUT TO:
+*/
+EXT. PALATIAL MANSION - DAY
+
+An EXTREMELY HANDSOME MAN drinks a beer.  Shirtless, unfortunately.
+"""
+        xml = """
+<fountain><dialogue><character><name>COGNITO</name></character><line>Everyone's coming after you mate!  Scorpio, The Boy Band, Sparrow, Point Blank Sniper...</line></dialogue><action>As he rattles off the long list, Brick and Steel share a look.  This is going to be BAD.</action><transition>CUT TO:</transition><scene><scene-heading><setting>EXT.</setting><location>PALATIAL MANSION</location><tod>DAY</tod></scene-heading><action>An EXTREMELY HANDSOME MAN drinks a beer.  Shirtless, unfortunately.</action></scene></fountain>
+"""
+        assert_transform(ft, xml)
+
+class TestSectionsAndSynopses:
+    def test_basics(self):
+        # "Create a Section by preceding a line with one or more
+        # pound-sign # characters"
+        ft = """
+CUT TO:
+
+# This is a Section
+
+INT. PALACE HALLWAY - NIGHT
+"""
+        xml = """
+<fountain><transition>CUT TO:</transition><section heading="This is a Section"><scene><scene-heading><setting>INT.</setting><location>PALACE HALLWAY</location><tod>NIGHT</tod></scene-heading><action/></scene></section></fountain>
+"""
+        assert_transform(ft, xml)
+    def test_multilevel(self):
+        # "You can nest Sections by adding more # characters."
+        ft = """
+# Act
+
+## Sequence
+
+### Scene
+
+## Another Sequence
+
+# Another Act
+"""
+        xml = """
+<fountain><section heading="Act"><section heading="Sequence"><section heading="Scene"/></section><section heading="Another Sequence"/></section><section heading="Another Act"><action/></section></fountain>
+"""
+        assert_transform(ft, xml)
+    def test_synopses(self):
+        # "Synopses are single lines prefixed by an equals sign
+        # =. They can be located anywhere within the screenplay."
+        ft = """
+# ACT I
+
+= Set up the characters and the story.
+
+EXT. BRICK'S PATIO - DAY
+
+= This scene sets up Brick & Steel's new life as retirees. Warm sun, cold beer, and absolutely nothing to do.
+
+A gorgeous day.  The sun is shining.  But BRICK BRADDOCK, retired police detective, is sitting quietly, contemplating -- something.
+"""
+        xml = """
+<fountain><section heading="ACT I"><synopsis>Set up the characters and the story.</synopsis><scene><scene-heading><setting>EXT.</setting><location>BRICK'S PATIO</location><tod>DAY</tod></scene-heading><synopsis>This scene sets up Brick &amp; Steel's new life as retirees. Warm sun, cold beer, and absolutely nothing to do.</synopsis><action>A gorgeous day.  The sun is shining.  But BRICK BRADDOCK, retired police detective, is sitting quietly, contemplating -- something.</action></scene></section></fountain>
 """
         assert_transform(ft, xml)
 
