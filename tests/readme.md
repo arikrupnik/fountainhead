@@ -1,4 +1,7 @@
 # fountainhead/tests
 
-Test cases for fountainhead
-The files contain Fountain sources from inline examples from the Fountain specification at  https://fountain.io/syntax
+Test cases for fountainhead, as complete .fountain files with expected
+parse trees in corresponding .ftx.
+
+Some of the files are substantial. Some are quite small, may be
+clearer as individual test cases in a Test*.py file.
