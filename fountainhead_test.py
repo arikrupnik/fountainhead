@@ -301,16 +301,67 @@ So much for retirement!
         assert_transform(ft, xml)
 
 class TestDualDialogue:
-    pass
+    def test_dd(self):
+        ft = """
+BRICK
+Screw retirement.
+
+STEEL ^
+Screw retirement.
+"""
+        xml = """
+<fountain><dual-dialogue><dialogue><character><name>BRICK</name></character><line>Screw retirement.</line></dialogue><dialogue><character><name>STEEL</name></character><line>Screw retirement.</line></dialogue></dual-dialogue><action/></fountain>
+"""
+        assert_transform(ft, xml)
 
 class TestLyrics:
-    pass
+    def test_lyrics(self):
+        ft = """
+~Willy Wonka! Willy Wonka! The amazing chocolatier!
+~Willy Wonka! Willy Wonka! Everybody give a cheer!
+"""
+        xml = """
+<fountain><action><lyric>Willy Wonka! Willy Wonka! The amazing chocolatier!</lyric>
+<lyric>Willy Wonka! Willy Wonka! Everybody give a cheer!</lyric></action></fountain>
+"""
+        assert_transform(ft, xml)
 
 class TestTransition:
-    pass
+    def test_transition(self):
+        ft = """
+Jack begins to argue vociferously in Vietnamese (?), But mercifully we...
+
+CUT TO:
+
+EXT. BRICK'S POOL - DAY"""
+        xml = """
+<fountain><action>Jack begins to argue vociferously in Vietnamese (?), But mercifully we...</action><transition>CUT TO:</transition><scene><scene-heading><setting>EXT.</setting><location>BRICK'S POOL</location><tod>DAY</tod></scene-heading></scene></fountain>
+"""
+        assert_transform(ft, xml)
+    def test_force_transition(self):
+        ft = """
+Brick and Steel regard one another.  A job well done.
+
+> Burn to White."""
+        xml = """
+<fountain><action>Brick and Steel regard one another.  A job well done.</action><transition>Burn to White.</transition></fountain>
+"""
+        assert_transform(ft, xml)
 
 class TestCenteredText:
-    pass
+    def test_ct(self):
+        # "Centered text constitutes an Action element, and is
+        # bracketed with greater/less-than:"
+        ft = ">THE END<"
+        xml = "<fountain><action><center>THE END</center></action></fountain>"
+        assert_transform(ft, xml)
+    def test_ct_whitespace(self):
+        # "Leading spaces are usually preserved in Action, but not for
+        # centered text, so you can add spaces between the text and
+        # the >< if you like."
+        ft = "> THE END <"
+        xml = "<fountain><action><center>THE END</center></action></fountain>"
+        assert_transform(ft, xml)
 
 class TestEmphasis:
 
@@ -394,17 +445,207 @@ This is going to be BAD.*</action></fountain>
 
 
 class TestTitlePage:
-    pass
+    def test_tp(self):
+        # "The optional Title Page is always the first thing in a
+        # Fountain document. Information is encoding in the format
+        # key: value. Keys can have spaces (e. g. Draft date), but
+        # must end with a colon."
+        #
+        # "Values can be inline with the key or they can be indented
+        # on a newline below the key (as shown with Contact
+        # above). Indenting is 3 or more spaces, or a tab. The
+        # indenting pattern allows multiple values for the same key
+        # (multiple authors, multiple address lines)."
+        ft = """
+Title:
+    _**BRICK & STEEL**_
+    _**FULL RETIRED**_
+Credit: Written by
+Author: Stu Maschwitz
+Source: Story by KTM
+Draft date: 1/20/2012
+Contact:
+    Next Level Productions
+    1588 Mission Dr.
+    Solvang, CA 93463
+"""
+        xml = """
+<fountain><title-page><key name="Title"><value><u><b>BRICK &amp; STEEL</b></u></value><value><u><b>FULL RETIRED</b></u></value></key><key name="Credit"><value>Written by</value></key><key name="Author"><value>Stu Maschwitz</value></key><key name="Source"><value>Story by KTM</value></key><key name="Draft date"><value>1/20/2012</value></key><key name="Contact"><value>Next Level Productions</value><value>1588 Mission Dr.</value><value>Solvang, CA 93463</value></key></title-page><action/></fountain>
+"""
+        assert_transform(ft, xml)
+    def test_min_tp(self):
+        # "All Title Page parts are optional. So:
+        ft = "Draft date: 6/23/2012"
+        # ...on its own is a valid Title Page."
+        xml = "<fountain><title-page><key name=\"Draft date\"><value>6/23/2012</value></key></title-page><action/></fountain>"
+        assert_transform(ft, xml)
 
-class TestPAgeBreaks:
-    pass
+class TestPageBreaks:
+    def test_page_breaks(self):
+        # "Page Breaks are indicated by a line containing three or
+        # more consecutive equals signs, and nothing more."
+        ft = """
+The General Lee flies through the air. FREEZE FRAME.
+
+NARRATOR
+Shoot, to the Dukes that's about like taking Grandma for a Sunday drive.
+
+>**End of Act One**<
+
+===
+
+>**Act Two**<
+
+The General Lee hangs in the air, right where we left it.  The NARRATOR'S voice kicks in.
+"""
+        xml = """
+<fountain><action>The General Lee flies through the air. FREEZE FRAME.</action><dialogue><character><name>NARRATOR</name></character><line>Shoot, to the Dukes that's about like taking Grandma for a Sunday drive.</line></dialogue><action><center><b>End of Act One</b></center></action><page-break></page-break><action><center><b>Act Two</b></center>
+
+The General Lee hangs in the air, right where we left it.  The NARRATOR'S voice kicks in.</action></fountain>
+"""
+        assert_transform(ft, xml)
 
 
 class TestPunctuation:
+    # There are no code examples in this secion of the spec
     pass
 
 class TestLineBreaks:
-    pass
+    # "Unlike some markup languages, Fountain takes every carriage
+    # return as intent."
+    def test_classic_example(self):
+        # "his allows the writer to control the spacing between
+        # paragraphs in Action elements, as seen in this classic
+        # example:"
+        ft = """
+Murtaugh, springing hell bent for leather -- and folks, grab your hats ... because just then, a BELL COBRA HELICOPTER crests the edge of the bluff.
+
+An explosion of sound...
+As it rises like an avenging angel ...
+Hovers, shattering the air with turbo-throb, sandblasting the hillside with a roto-wash of loose dirt, tables, chairs, everything that's not nailed down ...
+
+Screaming, chaos, frenzy.
+Three words that apply to this scene.
+"""
+        xml = """
+<fountain><action>Murtaugh, springing hell bent for leather -- and folks, grab your hats ... because just then, a BELL COBRA HELICOPTER crests the edge of the bluff.
+
+An explosion of sound...
+As it rises like an avenging angel ...
+Hovers, shattering the air with turbo-throb, sandblasting the hillside with a roto-wash of loose dirt, tables, chairs, everything that's not nailed down ...
+
+Screaming, chaos, frenzy.
+Three words that apply to this scene.</action></fountain>
+"""
+        assert_transform(ft, xml)
+        # but semantic linebreaks fold adjacent lines
+        xml = """
+<fountain><action>Murtaugh, springing hell bent for leather -- and folks, grab your hats ... because just then, a BELL COBRA HELICOPTER crests the edge of the bluff.
+
+An explosion of sound... As it rises like an avenging angel ... Hovers, shattering the air with turbo-throb, sandblasting the hillside with a roto-wash of loose dirt, tables, chairs, everything that's not nailed down ...
+
+Screaming, chaos, frenzy. Three words that apply to this scene.</action></fountain>
+"""
+        assert_transform(ft, xml, SEMANTIC_LINES)
+    def test_force_action(self):
+        # "There are some unusual cases where this will fail. If you
+        # wrote something like this:
+        ft = """
+INT. CASINO - NIGHT
+
+THE DEALER eyes the new player warily.
+
+SCANNING THE AISLES...
+Where is that pit boss?
+
+No luck. He has no choice to deal the cards.
+"""
+        # "...Fountain would interpret SCANNING THE AISLES... as a
+        # Character name"
+        xml = """
+<fountain><scene><scene-heading><setting>INT.</setting><location>CASINO</location><tod>NIGHT</tod></scene-heading><action>THE DEALER eyes the new player warily.</action><dialogue><character><name>SCANNING THE AISLES...</name></character><line>Where is that pit boss?</line></dialogue><action>No luck. He has no choice to deal the cards.</action></scene></fountain>
+"""
+        assert_transform(ft, xml)
+        # "To correct this, use a preceding ! to force the uppercase
+        # line to be Action"
+        ft = """
+INT. CASINO - NIGHT
+
+THE DEALER eyes the new player warily.
+
+!SCANNING THE AISLES...
+Where is that pit boss?
+
+No luck. He has no choice to deal the cards.
+"""
+        xml = """
+<fountain><scene><scene-heading><setting>INT.</setting><location>CASINO</location><tod>NIGHT</tod></scene-heading><action>THE DEALER eyes the new player warily.
+
+SCANNING THE AISLES...
+Where is that pit boss?
+
+No luck. He has no choice to deal the cards.</action></scene></fountain>
+"""
+        assert_transform(ft, xml)
+    def test_dialogue(self):
+        # "Fountain will know that DEALER's dialogue should be one
+        # continuous formatted block with forced line breaks."
+        ft = """
+DEALER
+Ten.
+Four.
+Dealer gets a seven.  Hit or stand sir?
+
+MONKEY
+Dude, I'm a monkey.
+"""
+        xml = """
+<fountain><dialogue><character><name>DEALER</name></character><line>Ten.
+Four.
+Dealer gets a seven.  Hit or stand sir?</line></dialogue><dialogue><character><name>MONKEY</name></character><line>Dude, I'm a monkey.</line></dialogue><action/></fountain>
+"""
+        assert_transform(ft, xml)
+        # "However, if you want to do the unconventional thing of
+        # leaving white space in dialogue
+        ft = """
+DEALER
+Ten.
+Four.
+Dealer gets a seven.
+
+Hit or stand sir?
+
+MONKEY
+Dude, I'm a monkey.
+"""
+        xml = """
+<fountain><dialogue><character><name>DEALER</name></character><line>Ten.
+Four.
+Dealer gets a seven.</line></dialogue><action>Hit or stand sir?</action><dialogue><character><name>MONKEY</name></character><line>Dude, I'm a monkey.</line></dialogue><action/></fountain>
+"""
+        assert_transform(ft, xml)
+        # "You would need to type two spaces on your "blank" line so
+        # that Fountain knows that Hit or stand sir? is not an Action
+        # element:"
+        ft = """
+DEALER
+Ten.
+Four.
+Dealer gets a seven.
+  
+Hit or stand sir?
+
+MONKEY
+Dude, I'm a monkey.
+"""
+        xml = """
+<fountain><dialogue><character><name>DEALER</name></character><line>Ten.
+Four.
+Dealer gets a seven.
+
+Hit or stand sir?</line></dialogue><dialogue><character><name>MONKEY</name></character><line>Dude, I'm a monkey.</line></dialogue><action/></fountain>
+"""
+        assert_transform(ft, xml)
 
 class TestIndenting:
     pass
@@ -415,8 +656,14 @@ class TestNotes:
 class TestBoneYard:
     pass
 
+@pytest.mark.xfail
 class TestSectionsAndSynopses:
-    pass
+    def test_(self):
+        ft = """
+"""
+        xml = """
+"""
+        assert_transform(ft, xml)
 
 DIR = os.path.dirname(os.path.abspath(__file__))
 @pytest.mark.parametrize("f", glob.glob(os.path.join(DIR, "tests/*.fountain")))
