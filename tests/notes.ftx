@@ -1,0 +1,20 @@
+<?xml version="1.0" ?><fountain><synopsis>synopsis1</synopsis><action><note>note0</note></action><synopsis>synopsis2</synopsis><action>preserve line breaks<note>note on its own line</note>
+between lines with interceding notes
+
+
+remove line breaks before &lt;note&gt; on its own line<note>note2</note><note>note3</note>
+leave one line break before continuing text
+
+
+remove empty lines between &lt;note&gt;s on their own lines<note>note4</note><note>note5</note>
+leave a line break before continuing text
+
+
+collapse any number of line breaks before &lt;note&gt;<note>note6</note>
+leave a line break before continuing text
+
+
+
+<note>note not on a line by itself
+
+</note>text immediately follows &lt;note&gt;</action></fountain>
