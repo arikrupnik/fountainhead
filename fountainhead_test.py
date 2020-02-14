@@ -817,9 +817,17 @@ A gorgeous day.  The sun is shining.  But BRICK BRADDOCK, retired police detecti
         assert_transform(ft, xml)
 
 DIR = os.path.dirname(os.path.abspath(__file__))
-@pytest.mark.parametrize("f", glob.glob(os.path.join(DIR, "tests/*.fountain")))
-@pytest.mark.xfail
+@pytest.mark.parametrize("f", glob.glob(os.path.join(DIR, "tests/*.ftx")))
 def test_file_sample(f):
-    ft = open(f)
-    xml = open(os.path.splitext(f)[0]+".ftx").read()
-    assert parse_fountain(ft, DEFAULT_ARGS).toxml() == xml
+    basename = os.path.splitext(f)[0]
+    arg_list = []
+    try:
+        basename, a = basename.split("~")
+        arg_list.append(a)
+    except ValueError:
+        pass
+    ft_filename = basename+".fountain"
+    arg_list.append(ft_filename)
+    args = fountainhead.arg_parser().parse_args(arg_list)
+    xml = open(f).read().strip()
+    assert fountainhead.parse_fountain(args.infile, args).toxml() == xml
