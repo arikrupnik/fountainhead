@@ -18,11 +18,11 @@ def ftx(fountain, args=DEFAULT_ARGS):
     ftx = fountainhead.parse_fountain(
         fountain.split("\n"),
         args).documentElement
-    print ftx.toxml()
+    print fountainhead.pprint(ftx)
     return ftx
 
 def assert_transform(fountain, xml, args=DEFAULT_ARGS):
-    assert ftx(fountain, args).toxml() == xml.strip()
+    assert fountainhead.pprint(ftx(fountain, args)).strip() == xml.strip()
 
 # the following classes capture example code from https://fountain.io/syntax
 
@@ -829,5 +829,5 @@ def test_file_sample(f):
     ft_filename = basename+".fountain"
     arg_list.append(ft_filename)
     args = fountainhead.arg_parser().parse_args(arg_list)
-    xml = open(f).read().strip()
-    assert fountainhead.parse_fountain(args.infile, args).toxml() == xml
+    xml = open(f).read()
+    assert fountainhead.pprint(fountainhead.parse_fountain(args.infile, args)).strip() == xml.strip()

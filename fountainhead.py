@@ -587,6 +587,44 @@ def findElementByAttributeValue(n, attr, value):
         if e.getAttributeNode(attr) and e.getAttribute(attr)==value:
             return e
 
+# This monkey patches the pretty-printer in xml.dom.minidom to indent
+# block-level elements but not mixed content ones. The function mostly
+# follows the standard implementation, except for the elif clause that
+# special-cases mixed-content elements.
+def writexml(self, writer, indent="", addindent="", newl=""):
+    # indent = current indentation
+    # addindent = indentation to add to higher levels
+    # newl = newline string
+    writer.write(indent+"<" + self.tagName)
+
+    attrs = self._get_attributes()
+    a_names = attrs.keys()
+    a_names.sort()
+
+    for a_name in a_names:
+        writer.write(" %s=\"" % a_name)
+        xml.dom.minidom._write_data(writer, attrs[a_name].value)
+        writer.write("\"")
+    if self.childNodes:
+        writer.write(">")
+        if (len(self.childNodes) == 1 and
+            self.childNodes[0].nodeType == xml.dom.minidom.Node.TEXT_NODE):
+            self.childNodes[0].writexml(writer, '', '', '')
+        elif self.nodeName in [SCENE_HEADING, CHARACTER, ACTION, DIALOGUE]:
+            for node in self.childNodes:
+                node.writexml(writer, "", "", "")
+        else:
+            writer.write(newl)
+            for node in self.childNodes:
+                node.writexml(writer, indent+addindent, addindent, newl)
+            writer.write(indent)
+        writer.write("</%s>%s" % (self.tagName, newl))
+    else:
+        writer.write("/>%s"%(newl))
+xml.dom.minidom.Element.writexml = writexml
+def pprint(doc):
+    return doc.toprettyxml(indent="  ", encoding="utf-8")
+
 
 # Dependencies
 
@@ -647,7 +685,7 @@ def main(argv):
     if args.dependencies:
         print make_rule(args)
     else:
-        print codecs.encode(parse_fountain(args.infile, args).toxml(), "utf-8")
+        print pretty_print(parse_fountain(args.infile, args))
 
 if __name__ == "__main__":
     main(sys.argv)
