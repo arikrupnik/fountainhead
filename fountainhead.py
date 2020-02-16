@@ -610,7 +610,7 @@ def writexml(self, writer, indent="", addindent="", newl=""):
         if (len(self.childNodes) == 1 and
             self.childNodes[0].nodeType == xml.dom.minidom.Node.TEXT_NODE):
             self.childNodes[0].writexml(writer, '', '', '')
-        elif self.nodeName in [SCENE_HEADING, CHARACTER, ACTION, DIALOGUE]:
+        elif self.nodeName in [SCENE_HEADING, CHARACTER, ACTION, DIALOGUE, TITLE_VALUE]:
             for node in self.childNodes:
                 node.writexml(writer, "", "", "")
         else:
