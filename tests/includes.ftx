@@ -1,1 +1,8 @@
-<?xml version="1.0" ?><fountain><action>An action paragraph</action><synopsis>&lt;example.fountain</synopsis><action><note> the following line includes only one (empty) section out of the file </note></action><synopsis>&lt;sections.fountain#intro</synopsis></fountain>
+<?xml version="1.0" encoding="utf-8"?>
+<fountain>
+  <action>An action paragraph</action>
+  <synopsis>&lt;example.fountain</synopsis>
+  <action><note> the following line includes only one (empty) section out of the file </note></action>
+  <synopsis>&lt;sections.fountain#intro</synopsis>
+</fountain>
+

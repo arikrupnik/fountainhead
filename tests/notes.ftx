@@ -1,4 +1,9 @@
-<?xml version="1.0" ?><fountain><synopsis>synopsis1</synopsis><action><note>note0</note></action><synopsis>synopsis2</synopsis><action>preserve line breaks<note>note on its own line</note>
+<?xml version="1.0" encoding="utf-8"?>
+<fountain>
+  <synopsis>synopsis1</synopsis>
+  <action><note>note0</note></action>
+  <synopsis>synopsis2</synopsis>
+  <action>preserve line breaks<note>note on its own line</note>
 between lines with interceding notes
 
 
@@ -17,4 +22,6 @@ leave a line break before continuing text
 
 <note>note not on a line by itself
 
-</note>text immediately follows &lt;note&gt;</action></fountain>
+</note>text immediately follows &lt;note&gt;</action>
+</fountain>
+

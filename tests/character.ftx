@@ -1,2 +1,70 @@
-<?xml version="1.0" ?><fountain><synopsis>character lines with extensions, dual dialogue</synopsis><scene><scene-heading><location>regular dialogue</location></scene-heading><dialogue><character><name>CHARACTER</name></character><line>Line</line></dialogue><action/></scene><scene><scene-heading><location>dual dialogue</location></scene-heading><dual-dialogue><dialogue><character><name>CHARACTER</name></character><line>Chorus Line</line></dialogue><dialogue><character><name>ANOTHER CHARACTER</name></character><line>Chorus Line</line></dialogue></dual-dialogue><action/></scene><scene><scene-heading><location>extension</location></scene-heading><dialogue><character><name>CHARACTER</name><extension>(O.S.)</extension></character><line>You can't see me</line></dialogue><action/></scene><scene><scene-heading><location>extension and dual</location></scene-heading><dual-dialogue><dialogue><character><name>CHARACTER</name><extension>(O.S.)</extension></character><line>I'm the visible echo</line></dialogue><dialogue><character><name>ANOTHER CHARACTER</name><extension>(O.S.)</extension></character><line>I'm the invisible echo</line></dialogue></dual-dialogue></scene><scene><scene-heading><location>using lower case forces line to ACTION</location></scene-heading><action>CHARACTER (o.s.)
-You can't see me</action></scene><scene><scene-heading><location>multiple extensions</location></scene-heading><dialogue><character><name>CHARACTER</name><extension>(O.S.)</extension><extension>(WRYLY)</extension></character><line>You can't see me, and I'm wry</line></dialogue><action/></scene><scene><scene-heading><location>multiple extensions, different witespace</location></scene-heading><dialogue><character><name>CHARACTER</name><extension>(O.S.)</extension><extension>(WRYLY)</extension></character><line>You can't see me, and I'm</line><parenthetical>(beat)</parenthetical><line>wry</line></dialogue></scene></fountain>
+<?xml version="1.0" encoding="utf-8"?>
+<fountain>
+  <synopsis>character lines with extensions, dual dialogue</synopsis>
+  <scene>
+    <scene-heading><location>regular dialogue</location></scene-heading>
+    <dialogue>
+      <character><name>CHARACTER</name></character>
+      <line>Line</line>
+    </dialogue>
+    <action/>
+  </scene>
+  <scene>
+    <scene-heading><location>dual dialogue</location></scene-heading>
+    <dual-dialogue>
+      <dialogue>
+        <character><name>CHARACTER</name></character>
+        <line>Chorus Line</line>
+      </dialogue>
+      <dialogue>
+        <character><name>ANOTHER CHARACTER</name></character>
+        <line>Chorus Line</line>
+      </dialogue>
+    </dual-dialogue>
+    <action/>
+  </scene>
+  <scene>
+    <scene-heading><location>extension</location></scene-heading>
+    <dialogue>
+      <character><name>CHARACTER</name><extension>(O.S.)</extension></character>
+      <line>You can't see me</line>
+    </dialogue>
+    <action/>
+  </scene>
+  <scene>
+    <scene-heading><location>extension and dual</location></scene-heading>
+    <dual-dialogue>
+      <dialogue>
+        <character><name>CHARACTER</name><extension>(O.S.)</extension></character>
+        <line>I'm the visible echo</line>
+      </dialogue>
+      <dialogue>
+        <character><name>ANOTHER CHARACTER</name><extension>(O.S.)</extension></character>
+        <line>I'm the invisible echo</line>
+      </dialogue>
+    </dual-dialogue>
+  </scene>
+  <scene>
+    <scene-heading><location>using lower case forces line to ACTION</location></scene-heading>
+    <action>CHARACTER (o.s.)
+You can't see me</action>
+  </scene>
+  <scene>
+    <scene-heading><location>multiple extensions</location></scene-heading>
+    <dialogue>
+      <character><name>CHARACTER</name><extension>(O.S.)</extension><extension>(WRYLY)</extension></character>
+      <line>You can't see me, and I'm wry</line>
+    </dialogue>
+    <action/>
+  </scene>
+  <scene>
+    <scene-heading><location>multiple extensions, different witespace</location></scene-heading>
+    <dialogue>
+      <character><name>CHARACTER</name><extension>(O.S.)</extension><extension>(WRYLY)</extension></character>
+      <line>You can't see me, and I'm</line>
+      <parenthetical>(beat)</parenthetical>
+      <line>wry</line>
+    </dialogue>
+  </scene>
+</fountain>
+
