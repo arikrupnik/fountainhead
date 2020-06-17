@@ -25,6 +25,10 @@ fountain {
         size: Letter;
         margin-top: 1in;
         margin-left: 1.5in;
+        background-color: white;
+        @top-right {
+            content: counter(page) ".";
+        }
     }
     title-page, page-break {
         page-break-after: always;
