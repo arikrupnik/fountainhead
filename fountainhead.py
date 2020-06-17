@@ -686,7 +686,7 @@ def main(argv):
         print make_rule(args)
     else:
         #print pprint(parse_fountain(args.infile, args))
-        print parse_fountain(args.infile, args).toxml()
+        print parse_fountain(args.infile, args).toxml().encode('utf-8')
 
 if __name__ == "__main__":
     main(sys.argv)
