@@ -45,6 +45,21 @@ fountain {
     }
 }
 
+/* Hierarchical Structure */
+section {
+    bookmark-level: 1;
+    bookmark-label: attr(heading);
+}
+section > section {
+    bookmark-level: 2;
+}
+section > section > section {
+    bookmark-level: 3;
+}
+section > section > section > section {
+    bookmark-level: 4;
+}
+
 /* Block Spacing and Formatting. */
 scene-heading, action, transition, dialogue, dual-dialogue {
     margin-bottom: 1em;
