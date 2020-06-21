@@ -19,7 +19,7 @@ XMLLINT=xmllint
 # http://pandoc.org/
 PANDOC=pandoc
 # http://weasyprint.org/
-WEASYPRINT=weasyprint
+WEASYPRINT=python3 -m weasyprint
 ASPELL=aspell
 GREP=grep
 GIT=git
