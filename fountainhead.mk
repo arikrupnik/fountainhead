@@ -69,7 +69,7 @@ include $(wildcard *.d)
 
 # weasyprint PDF from HTML
 .html.pdf:
-	$(WEASYPRINT) $< $@
+	$(WEASYPRINT) --presentational-hints $< $@
 
 # additional artifacts from .fountain
 
