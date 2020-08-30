@@ -204,7 +204,7 @@ def parse_line(line, fountain, nextline, syntax_extensions):
                 # "Character names must include at least one
                 # alphabetical character. "R2D2" works, but "23" does
                 # not."
-                if re.sub(r"[0-9_]", "", re.sub(r"\W", "", line)):
+                if re.sub(r"[0-9_]", "", re.sub(r"\W", "", line, flags=re.U)):
                     return push_character(fountain, sline)
             # "You can force a Character element by preceding it with
             # the "at" symbol @."
