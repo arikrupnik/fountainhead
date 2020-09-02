@@ -4,6 +4,7 @@ import fountainhead
 import pytest
 import glob
 import os
+import re
 
 DEFAULT_ARGS = fountainhead.arg_parser().parse_args("")
 SEMANTIC_LINES = fountainhead.arg_parser().parse_args(["-s",])
@@ -177,13 +178,29 @@ The men look at each other.</action>
 """
         assert_transform(ft, xml_sem_lines, SEMANTIC_LINES)
 
-        # Add test here for https://github.com/arikrupnik/fountainhead/issues/15
+    # two spaces at the end of a line preserve the linebreaks in default AND semanitc-lines modes
+    def test_double_spacess(self):
+        # note the double spaces at the end of first two lines
+        ft = """
+And then there's a long beat.  
+Longer than is funny.  
+Long enough to be depressing.
+"""
+        xml = """
+<fountain>
+  <action>And then there's a long beat.  
+Longer than is funny.  
+Long enough to be depressing.</action>
+</fountain>
+"""
+        assert_transform(ft, xml)
+        assert_transform(ft, re.sub(r"  $", "", xml, flags=re.MULTILINE), SEMANTIC_LINES)
 
     # The following test fails. It appears that Markdown.convert() in
     # parse_inlines() strips leading whitespace from lines (The
     # argument `l` to contert() contains the whitespace but the return
     # misses it). It is possible that ParagraphProcessor is the
-    # component remocing this whitespace.
+    # component removing this whitespace.
     @pytest.mark.xfail
     def test_tabs_and_spaces(self):
         # "Tabs and spaces are retained in Action elements,

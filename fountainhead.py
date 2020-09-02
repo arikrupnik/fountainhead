@@ -138,8 +138,8 @@ def parse_line(line, fountain, nextline, syntax_extensions):
     sline = line.strip()
     
     # first, I consider forcing elements
-    if sline.startswith("!"):
-        return push_element(fountain, ACTION, sline[1:])
+    if line.lstrip().startswith("!"):
+        return push_element(fountain, ACTION, line.lstrip()[1:])
 
     # next, I handle context-free elements
     if sline.startswith("#"):
@@ -395,12 +395,20 @@ def parse_inlines(doc, semantic_linebreaks, syntax_extensions):
     # assuming these have text-only content at this point
     for tag in (TITLE_VALUE, ACTION, DIALOGUE):
         for e in doc.getElementsByTagName(tag):
-            text=e.removeChild(e.firstChild).nodeValue
+            lines=e.removeChild(e.firstChild).nodeValue.strip().split("\n")
             if semantic_linebreaks:
                 # consolidate adjacent lines; leave as is if blank
-                # lines intervene
-                text=re.sub(r"([^\n])\n([^\n])", r"\1 \2", text)
-            for n, l in enumerate(text.strip().split("\n")):
+                # lines intervene, unless previous line ends with two spaces
+                c_lines = []
+                for l in lines:
+                    if c_lines and c_lines[-1] and (not c_lines[-1].endswith("  ")) and l:
+                        c_lines[-1] = c_lines[-1] + " " + l
+                    else:
+                        if c_lines and c_lines[-1].endswith("  "):
+                            c_lines[-1] = c_lines[-1][:-2]
+                        c_lines.append(l)
+                lines = c_lines
+            for n, l in enumerate(lines):
                 if n:
                     appendText(e, "\n")
                 mds=m.convert(l)
